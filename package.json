@@ -1,0 +1,21 @@
+{
+  "name": "protect-the-light",
+  "version": "1.0.0",
+  "description": "Tower defense game",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js"
+  },
+  "author": "",
+  "dependencies": {
+    "koa": "^2.5.0",
+    "koa-route": "^3.2.0",
+    "koa-static": "^4.0.2",
+    "koa-websocket": "^4.1.0",
+    "uuid": "^3.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.15.1"
+  }
+}
