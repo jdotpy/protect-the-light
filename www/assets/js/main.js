@@ -20,6 +20,7 @@ function GameClient(path) {
   }
 
   client.sendMessage = function(message) {
+    console.log('sending message:', message);
     client.socket.send(JSON.stringify(message));
   }
 

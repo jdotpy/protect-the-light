@@ -1,7 +1,18 @@
 const uuid = require('uuid/v4');
 const utils = require('./utils');
 const Events = require('./events');
+const Entities = require('./entities');
+const Player = require('./players');
+const Maps = require('./maps');
 
+MAX_NAME_LENGTH = 50;
+
+function errorMessage(message) {
+  return {
+    type: 'error',
+    message,
+  };
+}
 
 function Game() {
   const game = {
@@ -11,14 +22,27 @@ function Game() {
     npcs: [],
     objects: [],
     stateUpdates: [],
+    loopCount: 0,
+    status: null,
   };
 
   game.addPlayer = function(player) {
     game.players.push(player);
-    game.stateUpdates.push(Events.newPlayer(player));
+    game.registerEvent(Events.newPlayer(player));
   }
 
-  game.start = function() {
+  game.removePlayer = function(player) {
+    game.players.remove(player);
+    game.registerEvent(Events.removePlayer(player));
+  }
+
+  game.registerEvent = function(event) {
+    game.stateUpdates.push(event);
+  }
+
+  game.launch = function() {
+    // This starts the gameloop but doesn't necessary start the game itself
+    game.status = 'init';
     game.loop();
   }
 
@@ -34,31 +58,74 @@ function Game() {
     }
   }
 
-  game.loop = function() {
-    const timestamp = new Date().valueOf();
-    const elapsed = 
-    const elapsed = 
-    console.log('game loop', timestamp);
-
-    /*
-     * Do game-level logic 
-     * then reset the action queue so that actions accrue
-     * for each loop
-     */
-
-    // Do game loop logic for existing entities (players, npcs, projectiles, etc)
-    for (const entity of game.getEntities()) {
-      entityUpdates = entity.logic();
-      game.stateUpdates = game.stateUpdates.concat(entityUpdates);
+  game.startPlaying = function() {
+    game.status = 'playing';
+    //: initialize map
+    game.map = Maps.Basic(game);
+    //: spawn players
+    for (const player of game.players) {
+      const character = player.role();
+      player.character = character;
+      game.registerEvent(Events.playerAssignCharacter(player, character));
+      game.spawn(character);
     }
+
+    //: start mob spawning?
+  }
+
+  game.logic = function() {
+    /* Before the game starts during name and role-picking */
+    if (game.status === 'init') {
+      const unreadyPlayers = game.players.some((player) => !player.ready);
+      if (unreadyPlayers.length > 0) {
+        return false;
+      }
+      game.startPlaying();
+    }
+    
+    /* During the actual action */
+    else if (game.status === 'playing') {
+      for (const entity of game.getEntities()) {
+        const entityUpdates = entity.logic();
+        game.stateUpdates = game.stateUpdates.concat(entityUpdates);
+      }
+      const mapUpdates = game.map.logic();
+      game.stateUpdates = game.stateUpdates.concat(mapUpdates);
+      if (game.map.isDone()) {
+        game.status = 'done';
+        game.registerEvent(Events.gameComplete(game.map.results()));
+      }
+    }
+
+    /* After losing */
+    else if (game.status === 'done') {
+      // TODO: Do I send a last stats message?
+    }
+  }
+
+  game.loop = function() {
+    // Manage game and loop timer
+    game.loopCount = game.loopCount + 1;
+    const loopTime = utils.preciseTime();
+    const elapsed = loopTime - game.lastLoopTime;
+    game.lastLoopTime = loopTime;
+    if (Math.round(loopTime) > Math.round(game.lastLoopTime)) {
+      console.log(`Loop rate: ${game.loopCount}loops/second`);
+      game.loopCount = 0;
+    }
+    console.log('game loop', loopTime, 'elapsed:', elapsed);
+
+    // Do status-specific logic
+    game.logic();
 
     /*
      * Update all players with changes that have happened
      * then reset the action queue so that actions accrue
-     * for each loop
+     * for each loop.
      */
-    game.sendStateUpdate(game.stateUpdates);
+    const updatesToSend = game.stateUpdates;
     game.stateUpdates = [];
+    game.sendStateUpdate(updatesToSend);
 
     // Schedule next loop
     //setImmediate(game.loop);
@@ -67,7 +134,8 @@ function Game() {
 
   game.sendStateUpdate = function(updates) {
     const message = {
-      playing: true,
+      type: 'state',
+      status: game.status,
       updates,
     };
     console.log(message);
@@ -80,25 +148,9 @@ function Game() {
   return game;
 }
 
-function Player(socket, game) {
-  const player = {
-    id: uuid(),
-    game: game,
-  };
+function NPC(game) {
 
-  player.sendMessage = function(message) {
-    socket.send(message);
-  }
-
-  player.stateDetails = function() {
-    return {
-      id: player.id,
-    }
-  }
-
-  return player;
 }
-
 
 function GameEngine() {
   engine = {};
@@ -109,22 +161,20 @@ function GameEngine() {
     const newGame = Game();
     engine.games[newGame.id] = newGame;
     engine.gameID = newGame.id;
-    newGame.start();
+    newGame.launch();
   }
   
   engine.onConnection = function(ctx) {
     const game = engine.games[engine.gameID];
     const player = Player(ctx.websocket, game);
-    
-    // Insert them into the game
     game.addPlayer(player);
-
+    
     // Make it easy to access the player on future messages
     ctx.player = player;
   }
 
   engine.onMessage = function(ctx, message) {
-    ctx.player.game.command(player, message);
+    ctx.player.handleMessage(message);
   }
   
   return engine;
