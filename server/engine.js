@@ -1,43 +1,44 @@
 const uuid = require('uuid/v4');
 const utils = require('./utils');
 const Events = require('./events');
-const Entities = require('./entities');
 const Player = require('./players');
 const Maps = require('./maps');
 
 MAX_NAME_LENGTH = 50;
-
-function errorMessage(message) {
-  return {
-    type: 'error',
-    message,
-  };
-}
 
 function Game() {
   const game = {
     id: uuid(),
     startTime: new Date(),
     players: [],
-    npcs: [],
-    objects: [],
-    stateUpdates: [],
+    stateUpdates: utils.Queue(),
     loopCount: 0,
     status: null,
   };
 
   game.addPlayer = function(player) {
     game.players.push(player);
-    game.registerEvent(Events.newPlayer(player));
+    game.stateUpdates.add(Events.newPlayer(player));
+    if (game.map) {
+      game.map.addPlayer(player);
+    }
+    player.sendMessage({ event: 'init.playerState', players: game.getPlayerState() });
   }
 
   game.removePlayer = function(player) {
     game.players.remove(player);
-    game.registerEvent(Events.removePlayer(player));
+    game.stateUpdates.add(Events.removePlayer(player));
+    if (game.map) {
+      game.map.removePlayer(player);
+    }
   }
 
-  game.registerEvent = function(event) {
-    game.stateUpdates.push(event);
+  game.playerUpdated = function(player) {
+    game.stateUpdates.add(Events.playerUpdated(player));
+  }
+
+  game.getPlayerState = function() {
+    return game.players.map(p => p.stateDetails());
   }
 
   game.launch = function() {
@@ -46,38 +47,21 @@ function Game() {
     game.loop();
   }
 
-  game.getEntities = function*() {
-    for (const player of game.players) {
-      yield player;
-    }
-    for (const npc of game.npcs) {
-      yield npc;
-    }
-    for (const obj of game.objects) {
-      yield obj;
-    }
-  }
-
   game.startPlaying = function() {
     game.status = 'playing';
-    //: initialize map
     game.map = Maps.Basic(game);
-    //: spawn players
-    for (const player of game.players) {
-      const character = player.role();
-      player.character = character;
-      game.registerEvent(Events.playerAssignCharacter(player, character));
-      game.spawn(character);
-    }
+    game.map.start()
+  }
 
-    //: start mob spawning?
+  game.hasBegun = function() {
+    return game.status !== 'init';
   }
 
   game.logic = function() {
     /* Before the game starts during name and role-picking */
     if (game.status === 'init') {
-      const unreadyPlayers = game.players.some((player) => !player.ready);
-      if (unreadyPlayers.length > 0) {
+      const hasUnreadyPlayers = game.players.some((player) => !player.ready);
+      if (hasUnreadyPlayers || game.players.length < 1) {
         return false;
       }
       game.startPlaying();
@@ -85,15 +69,11 @@ function Game() {
     
     /* During the actual action */
     else if (game.status === 'playing') {
-      for (const entity of game.getEntities()) {
-        const entityUpdates = entity.logic();
-        game.stateUpdates = game.stateUpdates.concat(entityUpdates);
-      }
       const mapUpdates = game.map.logic();
-      game.stateUpdates = game.stateUpdates.concat(mapUpdates);
+      game.stateUpdates.addAll(mapUpdates);
       if (game.map.isDone()) {
         game.status = 'done';
-        game.registerEvent(Events.gameComplete(game.map.results()));
+        game.stateUpdates.add(Events.gameComplete(game.map.results()));
       }
     }
 
@@ -117,15 +97,7 @@ function Game() {
 
     // Do status-specific logic
     game.logic();
-
-    /*
-     * Update all players with changes that have happened
-     * then reset the action queue so that actions accrue
-     * for each loop.
-     */
-    const updatesToSend = game.stateUpdates;
-    game.stateUpdates = [];
-    game.sendStateUpdate(updatesToSend);
+    game.sendStateUpdate();
 
     // Schedule next loop
     //setImmediate(game.loop);
@@ -133,10 +105,15 @@ function Game() {
   }
 
   game.sendStateUpdate = function(updates) {
+    /*
+     * Update all players with changes that have happened
+     * then reset the action queue so that actions accrue
+     * for each loop.
+     */
     const message = {
-      type: 'state',
+      event: 'state',
       status: game.status,
-      updates,
+      updates: game.stateUpdates.drain(),
     };
     console.log(message);
     const messageStr = JSON.stringify(message);
@@ -166,6 +143,11 @@ function GameEngine() {
   
   engine.onConnection = function(ctx) {
     const game = engine.games[engine.gameID];
+    if (game.hasBegun()) {
+      ctx.websocket.close();
+      return false;
+    }
+
     const player = Player(ctx.websocket, game);
     game.addPlayer(player);
     

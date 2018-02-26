@@ -10,9 +10,21 @@ GameEngine.createGame();
 const server = websockify(new Koa());
 server.use(KoaStatic('./www'));
 server.ws.use(route.all('/ws-connect', function (ctx) {
-  GameEngine.onConnection(ctx);
+  try {
+    GameEngine.onConnection(ctx);
+  }
+  catch (error) {
+    console.error('Error handling new connection');
+    console.error(error);
+  }
   ctx.websocket.on('message', function(message) {
-    GameEngine.onMessage(ctx, JSON.parse(message))
+    try {
+      GameEngine.onMessage(ctx, JSON.parse(message))
+    }
+    catch (error) {
+      console.error('Error handling websocket message');
+      console.error(error);
+    }
   });
 }));
  

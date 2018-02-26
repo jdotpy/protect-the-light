@@ -9,14 +9,23 @@ function websocketUrl(path) {
 function GameClient(path) {
   const client = {};
 
-  client.onServerMessage = function(event) {
-    console.log('Got message from server:')
-    console.log(JSON.parse(event.data))
+  client.onServerMessage = function(e) {
+    const message = JSON.parse(e.data);
+    console.log('Got message from server:', message)
+    switch (message.event) {
+      case 'state': {
+
+      }
+    }
   }
 
   client.onServerConnect = function() {
-    console.log('connected websocket to server', client.socket);
-    client.sendMessage({ message: 'I want to play!' })
+    console.log('Got connected!')
+    document.uiState.game.connected = true;
+  }
+
+  client.onServerError = function(error) {
+    console.log('got an error:', error);
   }
 
   client.sendMessage = function(message) {
@@ -24,15 +33,19 @@ function GameClient(path) {
     client.socket.send(JSON.stringify(message));
   }
 
+  // Logic
+  client.initializePlayer = function(name, role) {
+    client.sendMessage({ event: 'init.chooseName', name });
+    client.sendMessage({ event: 'init.chooseRole', role });
+  }
+
   // Init
-  console.log('initializing websocket connection');
   client.socket = new WebSocket(websocketUrl(path));
   client.socket.onmessage = client.onServerMessage;
   client.socket.onopen = client.onServerConnect;
-  console.log('initialized:', client.socket);
-  
-  return {};
+  client.socket.onerror = client.onServerError;
+
+  return client;
 }
 
 document.client = GameClient('/ws-connect');
-

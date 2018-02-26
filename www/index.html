@@ -5,14 +5,38 @@
     <meta charset="UTF-8">
     <title>Protect the Light!</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.13/dist/vue.js"></script>
-    <script src="/assets/js/main.js"></script>
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" />
     <link rel="stylesheet" href="/assets/styles/main.css" type="text/css" />
   </head>
 
   <body>
-    <canvas id="viewport"></canvas>
-  </body>
+    <div id="ui">
+      <div v-if="!game.connected">
+				<p>Yo i'm loading</p>
+			</div>
+      <div v-if="game.mode === 'init'">
+        <h1>Protect the Light</h1>
+				<div>
+          <ul>
+            <li>Current users go here</li>
+          </ul>
 
+			  </div>
+				<form v-on:submit.prevent="onPlayerSetupSubmit">
+					<input v-model="init.name" placeholder="Enter username" />
+					<p class="error" v-if="init.error">{{ init.error }}</p>
+					<select v-model="init.role">
+						<option disabled value="">Select a role</option>
+						<option value="archer">Archer</option>
+					</select>
+					<button>Connect</button>
+        </form>
+      </div>
+    </div>
+    <canvas id="viewport"></canvas>
+
+    <script src="/assets/js/main.js"></script>
+    <script src="/assets/js/ui.js"></script>
+  </body>
 </html>

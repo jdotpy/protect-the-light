@@ -10,7 +10,40 @@ function preciseTime() {
   return seconds;
 }
 
+function keyBy(items, property) {
+  return items.reduce(
+    (keyed, item) => {
+      const newProperty = {[item[property]]: item };
+      return Object.assign(keyed, newProperty);
+    },
+    {},
+  );
+}
+
+function Queue() {
+  const queue = {
+    items: [],
+  };
+
+  queue.add = function(item) {
+    queue.items.push(item);
+  }
+
+  queue.addAll = function(items) {
+    queue.items.concat(items);
+  }
+
+  queue.drain = function() {
+    const current = queue.items;
+    queue.items = [];
+    return current;
+  }
+
+  return queue;
+}
 
 module.exports = {
   preciseTime,
-}
+  keyBy,
+  Queue,
+};
