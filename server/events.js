@@ -1,32 +1,38 @@
 const EVENTS = {
 
+  playerConnectState: (game) => ({
+    event: 'init.gameState',
+    players: game.getPlayerState(),
+    status: game.status,
+  }),
+
   newPlayer: (player) => ({
-    type: 'player.add',
+    event: 'player.add',
     player: player.stateDetails(),
   }),
 
   removePlayer: (player) => ({
-    type: 'player.remove',
+    event: 'player.remove',
     player: player.stateDetails(),
   }),
 
   playerUpdated: (player) => ({
-    type: 'player.updated',
+    event: 'player.update',
     player: player.stateDetails(),
   }),
 
   spawn: (entity) => ({
-    type: 'entity.spawn',
+    event: 'entity.spawn',
     entity: entity.stateDetails(),
   }),
 
   startPlaying: (map) => ({
-    type: 'game.start',
+    event: 'game.start',
     map: map.name,
   }),
 
   playerAssignCharacter: (player, entity) => ({
-    type: 'player.setCharacter',
+    event: 'player.setCharacter',
     details: {
       player: player.name,
       entity: entity.id,

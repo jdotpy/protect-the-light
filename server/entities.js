@@ -22,11 +22,12 @@ const BaseEntity = {
 
 function Archer() {
   const character = BaseEntity.extend({ });
+  return character;
 }
-
 
 function BasicEnemy() {
   const enemy = BaseEntity.extend({ });
+  return enemy;
 }
 
 const PLAYER_ROLES = {

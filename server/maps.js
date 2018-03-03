@@ -1,4 +1,5 @@
 const utils = require('./utils');
+const Events = require('./events');
 const Entities = require('./entities');
 
 function BasicMap(players) {
@@ -14,7 +15,7 @@ function BasicMap(players) {
     map.players.push(player);
     map.playersByName = utils.keyBy(map.players, 'name');
   }
-  map.removePlayer = function() {
+  map.removePlayer = function(player) {
     map.players.remove(player);
     map.playersByName = utils.keyBy(map.players, 'name');
   }
@@ -22,13 +23,14 @@ function BasicMap(players) {
   map.spawn = function(entity) {
     entity.x = 100;
     entity.y = 100;
-    map.stateUpdates.push(Events.spawn(entity));
+    map.stateUpdates.add(Events.spawn(entity));
   }
 
   map.start = function() {
     // Spawn players
     for (const player of map.players) {
       const character = Entities.PLAYER_ROLES[player.role]();
+      console.log('Character:', player.role, character);
       player.character = character;
       map.stateUpdates.add(Events.playerAssignCharacter(player, character));
       map.spawn(character);

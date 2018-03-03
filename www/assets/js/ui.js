@@ -12,5 +12,18 @@ const app = new Vue({
     onPlayerSetupSubmit: function() {
       document.client.initializePlayer(this.init.name, this.init.role);
     },
+    onPlayerReady: function() {
+      document.client.markPlayerReady();
+    },
+    currentPlayer: function() {
+      if (!this.game || !this.game.playerID || !this.game.players) {
+        return {};
+      }
+      return this.game.players.find((p) => p.id === this.game.playerID);
+    },
+    isPlayerSetup: function() {
+      const p = this.currentPlayer();
+      return p && p.name && p.role;
+    },
   }
 })

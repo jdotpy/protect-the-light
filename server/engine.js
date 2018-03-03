@@ -22,7 +22,7 @@ function Game() {
     if (game.map) {
       game.map.addPlayer(player);
     }
-    player.sendMessage({ event: 'init.playerState', players: game.getPlayerState() });
+    player.sendMessage(Events.playerConnectState(game));
   }
 
   game.removePlayer = function(player) {
@@ -44,12 +44,12 @@ function Game() {
   game.launch = function() {
     // This starts the gameloop but doesn't necessary start the game itself
     game.status = 'init';
+    game.map = Maps.Basic(game.players);
     game.loop();
   }
 
   game.startPlaying = function() {
     game.status = 'playing';
-    game.map = Maps.Basic(game);
     game.map.start()
   }
 

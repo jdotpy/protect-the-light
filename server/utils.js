@@ -1,5 +1,9 @@
 // Make extending objects have a nice syntax
-Object.prototype.extend = function(subject){subject.__proto__ = this};
+Object.prototype.extend = function(subject) {
+  subject.__proto__ = this
+  return subject;
+};
+
 Array.prototype.remove = function(item){
     this.splice(this.indexOf(item), 1);
 };
