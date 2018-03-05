@@ -16,7 +16,7 @@
 				<p>Yo i'm loading</p>
 			</div>
       <div v-if="game.status === 'init'">
-        <h1>Protect the Light</h1>
+        <h1>Don't let the light go out...</h1>
 				<div id="playerList">
           <ul>
             <li v-for="player in game.players">
@@ -48,9 +48,6 @@
             <button v-on:click="onPlayerReady">I am ready</button>
           </span>
         </div>
-      </div>
-      <div v-if="game.status === 'playing'">
-        <h2>You're playing not sure why this is here in your way</h2>
       </div>
     </div>
     <canvas id="viewport"></canvas>

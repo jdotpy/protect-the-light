@@ -50,6 +50,7 @@ function Game() {
 
   game.startPlaying = function() {
     game.status = 'playing';
+    game.stateUpdates.add(Events.startPlaying(game.map));
     game.map.start()
   }
 
@@ -57,7 +58,7 @@ function Game() {
     return game.status !== 'init';
   }
 
-  game.logic = function() {
+  game.logic = function(loopTime, elapsed) {
     /* Before the game starts during name and role-picking */
     if (game.status === 'init') {
       const hasUnreadyPlayers = game.players.some((player) => !player.ready);
@@ -69,7 +70,7 @@ function Game() {
     
     /* During the actual action */
     else if (game.status === 'playing') {
-      const mapUpdates = game.map.logic();
+      const mapUpdates = game.map.logic(loopTime, elapsed);
       game.stateUpdates.addAll(mapUpdates);
       if (game.map.isDone()) {
         game.status = 'done';
@@ -96,7 +97,7 @@ function Game() {
     console.log('game loop', loopTime, 'elapsed:', elapsed);
 
     // Do status-specific logic
-    game.logic();
+    game.logic(loopTime, elapsed);
     game.sendStateUpdate();
 
     // Schedule next loop

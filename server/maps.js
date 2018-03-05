@@ -6,9 +6,11 @@ function BasicMap(players) {
   const map = {
     name: 'basic',
     levelNum: 0,
+    radius: 20,
     players: players.slice(),
     playersByName: utils.keyBy(players, 'name'),
     stateUpdates: utils.Queue(),
+    entities: [],
   };
 
   map.addPlayer = function(player) {
@@ -21,26 +23,26 @@ function BasicMap(players) {
   }
 
   map.spawn = function(entity) {
-    entity.x = 100;
-    entity.y = 100;
+    map.entities.push(entity);
+    entity.x = 0;
+    entity.y = 0;
     map.stateUpdates.add(Events.spawn(entity));
   }
 
   map.start = function() {
+    // Spawn Fire Tower
+    map.spawn(Entities.FireTower());
+
     // Spawn players
     for (const player of map.players) {
-      const character = Entities.PLAYER_ROLES[player.role]();
-      console.log('Character:', player.role, character);
+      const character = Entities.PLAYER_ROLES[player.role](player.id);
       player.character = character;
-      map.stateUpdates.add(Events.playerAssignCharacter(player, character));
       map.spawn(character);
     }
   }
 
-  map.logic = function() {
-    const stateUpdates = [];
-
-    return stateUpdates;
+  map.logic = function(loopTime, elapsed) {
+    return map.stateUpdates.drain();
   }
 
   map.isDone = function() {

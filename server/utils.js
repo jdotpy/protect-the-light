@@ -1,6 +1,9 @@
 // Make extending objects have a nice syntax
 Object.prototype.extend = function(subject) {
   subject.__proto__ = this
+  if (subject.__init__) {
+    subject.__init__();
+  }
   return subject;
 };
 
@@ -34,7 +37,7 @@ function Queue() {
   }
 
   queue.addAll = function(items) {
-    queue.items.concat(items);
+    queue.items = queue.items.concat(items);
   }
 
   queue.drain = function() {

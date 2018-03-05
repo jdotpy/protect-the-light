@@ -36,7 +36,12 @@ function websocketUrl(path) {
 
 function GameClient(path) {
   const client = {};
-  const state = {};
+  const state = {
+    players: {},
+    entities: {},
+  };
+  document.gameState = state; // for debugging purposes, add to document
+
   const uiUpdateEvents = toSet([
     'init.you',
     'init.gameState',
@@ -78,7 +83,6 @@ function GameClient(path) {
   }
 
   client.updateUI = function() {
-    console.log('updating state with:', document.uiState.game);
     // Setting this attribute will trigger a new UI render
     document.uiState.game = {
       connected: state.connected,
@@ -98,12 +102,25 @@ function GameClient(path) {
     client.sendMessage({ event: 'init.ready' });
   }
 
+  client.startPlaying = function(e) {
+    client.map = e.map;
+    client.renderer = Renderer("viewport", client);
+    client.renderer.start();
+  }
+
   client.handleEvent = function(action) {
     if (uiUpdateEvents[action.event]) {
       client.uiStale = true; 
     }
     console.log(`handling event [${action.event}]`, action);
     switch (action.event) {
+      case 'entity.spawn': {
+        state.entities[action.entity.id] = action.entity;
+      }
+      case 'game.start': {
+        client.startPlaying(action);
+        break;
+      }
       case 'init.you': {
         state.playerID = action.player.id;
         if (!state.players) {
@@ -141,6 +158,42 @@ function GameClient(path) {
   client.socket.onerror = client.onServerError;
 
   return client;
+}
+
+function Renderer(viewport, client) {
+  const renderer = {
+    canvas: document.getElementById(viewport),
+  };
+  
+  renderer.start = function() {
+    renderer.autoSize();
+    renderer.ctx = this.canvas.getContext('2d');
+    renderer.draw();
+  }
+
+  renderer.autoSize = function() {
+    renderer.canvas.width = 1000;
+    renderer.canvas.height = 1000;
+    renderer.width = 1000;
+    renderer.height = 1000;
+  }
+
+  renderer.draw = function() {
+    const ctx = renderer.ctx;
+
+    // Draw helpful background of black
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, renderer.width, renderer.height);
+
+    // Draw map 
+    ctx.arc(500, 500, 500, 0, Math.PI * 2);
+    ctx.fillStyle = '#00dd00';
+    ctx.fill();
+    
+    // Now do this about 60fps
+    window.requestAnimationFrame(renderer.draw);
+  }
+  return renderer;
 }
 
 document.client = GameClient('/ws-connect');
