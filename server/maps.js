@@ -13,6 +13,13 @@ function BasicMap(players) {
     entities: [],
   };
 
+  map.stateDetails = function() {
+    return {
+      name: this.name,
+      radius: this.radius,
+    };
+  };
+
   map.addPlayer = function(player) {
     map.players.push(player);
     map.playersByName = utils.keyBy(map.players, 'name');

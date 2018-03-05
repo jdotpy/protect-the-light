@@ -160,6 +160,18 @@ function GameClient(path) {
   return client;
 }
 
+const ENTITY_RENDERERS = {
+  'archer': (renderer, ctx, entity) => {
+    ctx.
+  },
+  'fire-tower': (renderer, ctx, entity) => {
+    ctx.fillStyle = '#a37954';
+    ctx.fillRect(entity.x, entity.y, renderer.width, renderer.height);
+  },
+
+
+}
+
 function Renderer(viewport, client) {
   const renderer = {
     canvas: document.getElementById(viewport),
@@ -178,6 +190,11 @@ function Renderer(viewport, client) {
     renderer.height = 1000;
   }
 
+  renderer.translateCoords(x, y) {
+
+    return { x, y };
+  }
+
   renderer.draw = function() {
     const ctx = renderer.ctx;
 
@@ -189,6 +206,14 @@ function Renderer(viewport, client) {
     ctx.arc(500, 500, 500, 0, Math.PI * 2);
     ctx.fillStyle = '#00dd00';
     ctx.fill();
+
+    // Draw entities
+    for (const entity of renderer.client.state.entities) {
+      const er = ENTITIY_RENDERERS[entity.type];
+      er(renderer, ctx, entity);
+    }
+
+    // TODO: Draw animations
     
     // Now do this about 60fps
     window.requestAnimationFrame(renderer.draw);
