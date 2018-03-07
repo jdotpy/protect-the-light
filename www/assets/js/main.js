@@ -36,11 +36,11 @@ function websocketUrl(path) {
 
 function GameClient(path) {
   const client = {};
-  const state = {
+  client.state = {
     players: {},
     entities: {},
   };
-  document.gameState = state; // for debugging purposes, add to document
+  document.gameState = client.state; // for debugging purposes, add to document
 
   const uiUpdateEvents = toSet([
     'init.you',
@@ -53,7 +53,7 @@ function GameClient(path) {
   client.onServerMessage = function(e) {
     const message = JSON.parse(e.data);
     if (message.event === 'state') {
-      state.status = message.status;
+      client.state.status = message.status;
       for (const action of message.updates) {
         client.handleEvent(action);
       }
@@ -68,7 +68,7 @@ function GameClient(path) {
   }
 
   client.onServerConnect = function() {
-    state.connected = true;
+    client.state.connected = true;
     console.log('Got connected!')
     document.uiState.game.connected = true;
   }
@@ -85,10 +85,10 @@ function GameClient(path) {
   client.updateUI = function() {
     // Setting this attribute will trigger a new UI render
     document.uiState.game = {
-      connected: state.connected,
-      status: state.status,
-      players: values(state.players || {}),
-      playerID: state.playerID,
+      connected: client.state.connected,
+      status: client.state.status,
+      players: values(client.state.players || {}),
+      playerID: client.state.playerID,
     };
   }
 
@@ -103,7 +103,6 @@ function GameClient(path) {
   }
 
   client.startPlaying = function(e) {
-    client.map = e.map;
     client.renderer = Renderer("viewport", client);
     client.renderer.start();
   }
@@ -115,35 +114,36 @@ function GameClient(path) {
     console.log(`handling event [${action.event}]`, action);
     switch (action.event) {
       case 'entity.spawn': {
-        state.entities[action.entity.id] = action.entity;
+        client.state.entities[action.entity.id] = action.entity;
+        break;
       }
       case 'game.start': {
+        client.state.map = action.map;
         client.startPlaying(action);
         break;
       }
       case 'init.you': {
-        state.playerID = action.player.id;
-        if (!state.players) {
-          state.players = {};
+        client.state.playerID = action.player.id;
+        if (!client.state.players) {
+          client.state.players = {};
         }
-        state.players[action.player.id] = action.player;
+        client.state.players[action.player.id] = action.player;
         break;
       }
       case 'init.gameState': {
-        state.players = keyBy('id', action.players);
-        console.log('got state players:', values(state.players));
-        state.status = action.status;
+        client.state.players = keyBy('id', action.players);
+        client.state.status = action.status;
         break;
       }
       case 'player.add':
       case 'player.update': {
         const player = action.player;
-        state.players[player.id] = player;
+        client.state.players[player.id] = player;
         break;
       }
       case 'player.remove': {
         const player = action.player;
-        delete state.players[player.id];
+        delete client.state.players[player.id];
         break;
       }
     }
@@ -162,18 +162,27 @@ function GameClient(path) {
 
 const ENTITY_RENDERERS = {
   'archer': (renderer, ctx, entity) => {
-    ctx.
+    // We'll eventually want orientation:
+    //  ctx.rotate(45 * Math.PI / 180);
+    //  ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const location = renderer.translateCoords(entity.x, entity.y);
+    const size = entity.size * renderer.SCALE_FACTOR;
+    const radius = size / 2;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(location.x - radius, location.y - radius, size, size);
   },
   'fire-tower': (renderer, ctx, entity) => {
+    const location = renderer.translateCoords(entity.x, entity.y);
+    const size = entity.size * renderer.SCALE_FACTOR;
+    const radius = size / 2;
     ctx.fillStyle = '#a37954';
-    ctx.fillRect(entity.x, entity.y, renderer.width, renderer.height);
+    ctx.fillRect(location.x - radius, location.y - radius, size, size);
   },
-
-
 }
 
 function Renderer(viewport, client) {
   const renderer = {
+    SCALE_FACTOR: 50,
     canvas: document.getElementById(viewport),
   };
   
@@ -181,35 +190,63 @@ function Renderer(viewport, client) {
     renderer.autoSize();
     renderer.ctx = this.canvas.getContext('2d');
     renderer.draw();
+    document.renderer = renderer;
   }
 
   renderer.autoSize = function() {
-    renderer.canvas.width = 1000;
-    renderer.canvas.height = 1000;
-    renderer.width = 1000;
-    renderer.height = 1000;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    renderer.canvas.width = width;
+    renderer.canvas.height = height;
+    renderer.width = width;
+    renderer.height = height;
+    renderer.center = {x: width / 2, y: height / 2};
   }
 
-  renderer.translateCoords(x, y) {
+  renderer.setCameraLocation = function() {
+    // This might track the player's coords
+    const location = { x: 0, y: 0 };
+    renderer.cameraLocation = {
+      x: location.x * renderer.SCALE_FACTOR,
+      y: location.y * renderer.SCALE_FACTOR * -1, // Y axis is flipped in canvas
+    };
+  }
 
-    return { x, y };
+  renderer.translateCoords = function(x, y) {
+    let mapX = x * renderer.SCALE_FACTOR;
+    let mapY = y * renderer.SCALE_FACTOR * -1; // Y axis is flipped in canvas
+
+    mapX = mapX + renderer.center.x - renderer.cameraLocation.x;
+    mapY = mapY + renderer.center.y - renderer.cameraLocation.y;
+    return { x: mapX, y: mapY };
   }
 
   renderer.draw = function() {
+    const drawStart = new Date();
+    
     const ctx = renderer.ctx;
+    // Update camera location
+    renderer.setCameraLocation();
 
     // Draw helpful background of black
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, renderer.width, renderer.height);
 
     // Draw map 
-    ctx.arc(500, 500, 500, 0, Math.PI * 2);
+    const mapCenter = renderer.translateCoords(0, 0);
+    ctx.arc(
+      mapCenter.x,
+      mapCenter.y,
+      renderer.SCALE_FACTOR * client.state.map.radius,
+      0,
+      Math.PI * 2
+    );
     ctx.fillStyle = '#00dd00';
     ctx.fill();
 
     // Draw entities
-    for (const entity of renderer.client.state.entities) {
-      const er = ENTITIY_RENDERERS[entity.type];
+    for (const entity of values(client.state.entities)) {
+      const er = ENTITY_RENDERERS[entity.type];
       er(renderer, ctx, entity);
     }
 

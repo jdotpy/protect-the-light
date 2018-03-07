@@ -24,6 +24,7 @@ const BaseEntity = {
     const details = {
       id: this.id,
       type: this.type,
+      size: this.size,
       hp: this.hp,
       x: this.x,
       y: this.y,
@@ -44,18 +45,19 @@ function Archer(playerID) {
   const character = BaseEntity.extend({
     playerID,
     type: 'archer',
+    size: 1,
     hp: 50,
   });
   return character;
 }
 
 function BasicEnemy() {
-  const enemy = BaseEntity.extend({ type: 'basic-enemy', hp: 10 });
+  const enemy = BaseEntity.extend({ type: 'basic-enemy', hp: 10, size: 1 });
   return enemy;
 }
 
 function FireTower() {
-  const tower = BaseEntity.extend({ type: 'fire-tower', hp: 100 });
+  const tower = BaseEntity.extend({ type: 'fire-tower', hp: 100, size: 2 });
   return tower;
 }
 
