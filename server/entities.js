@@ -6,7 +6,8 @@ const BaseEntity = {
   type: null,
   x: null, // Every entity has a location defined by x,y coords but they are overriden 
   y: null, // by the actual entity
-  size: 0,
+  size: 1,
+  orientation: 0,
 
   __init__: function() {
     this.id = uuid();
@@ -20,11 +21,25 @@ const BaseEntity = {
     );
   },
 
+  applyVelocity: function(angle, speed) {
+    const radians = angle * (Math.PI / 180);
+    const vy = Math.sin(radians) * speed;
+    const vx = Math.cos(radians) * speed;
+
+    this.x = this.x + vx;
+    this.y = this.y + vy;
+  },
+
+  applyRotation: function(degrees) {
+    this.orientation = (this.orientation + degrees) % 360;
+  },
+
   stateDetails: function() {
     const details = {
       id: this.id,
       type: this.type,
       size: this.size,
+      orientation: this.orientation,
       hp: this.hp,
       x: this.x,
       y: this.y,
@@ -47,6 +62,8 @@ function Archer(playerID) {
     type: 'archer',
     size: 1,
     hp: 50,
+    speed: 2,
+    speed: 2,
   });
   return character;
 }

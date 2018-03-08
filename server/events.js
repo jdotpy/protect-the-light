@@ -39,6 +39,21 @@ const EVENTS = {
     },
   }),
 
+  entityMove: (entity) => ({
+    event: 'entity.move',
+    id: entity.id,
+    location: {
+      x: entity.x,
+      y: entity.y,
+    },
+  }),
+
+  entityRotate: (entity) => ({
+    event: 'entity.rotate',
+    id: entity.id,
+    orientation: entity.orientation,
+  }),
+
 };
 
 module.exports = EVENTS;

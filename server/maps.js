@@ -29,26 +29,29 @@ function BasicMap(players) {
     map.playersByName = utils.keyBy(map.players, 'name');
   }
 
-  map.spawn = function(entity) {
+  map.spawn = function(entity, x, y) {
     map.entities.push(entity);
-    entity.x = 0;
-    entity.y = 0;
+    entity.x = x;
+    entity.y = y;
     map.stateUpdates.add(Events.spawn(entity));
   }
 
   map.start = function() {
     // Spawn Fire Tower
-    map.spawn(Entities.FireTower());
+    map.spawn(Entities.FireTower(), 0, 0);
 
     // Spawn players
     for (const player of map.players) {
       const character = Entities.PLAYER_ROLES[player.role](player.id);
       player.character = character;
-      map.spawn(character);
+      map.spawn(character, -2, -2);
     }
   }
 
   map.logic = function(loopTime, elapsed) {
+    for (const player of map.players) {
+      player.logic(map, loopTime, elapsed);
+    }
     return map.stateUpdates.drain();
   }
 

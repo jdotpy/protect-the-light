@@ -97,6 +97,36 @@ function GameClient(path) {
     client.sendMessage({ event: 'init.chooseName', name });
     client.sendMessage({ event: 'init.chooseRole', role });
   }
+
+  client.controlEvent = function(event) {
+    return () => client.sendMessage(event);
+  }
+
+  client.bindControls = function() {
+    // compass movement
+    Mousetrap.bind('w', client.controlEvent({ event: 'player.move', power: 1, direction: 'up' }), 'keydown');
+    Mousetrap.bind('w', client.controlEvent({ event: 'player.move', power: 0 }), 'keyup');  
+    Mousetrap.bind('s', client.controlEvent({ event: 'player.move', power: 1, direction: 'down' }), 'keydown');
+    Mousetrap.bind('s', client.controlEvent({ event: 'player.move', power: 0 }), 'keyup');  
+    Mousetrap.bind('a', client.controlEvent({ event: 'player.move', power: 1, direction: 'left' }), 'keydown');
+    Mousetrap.bind('a', client.controlEvent({ event: 'player.move', power: 0 }), 'keyup');  
+    Mousetrap.bind('d', client.controlEvent({ event: 'player.move', power: 1, direction: 'right' }), 'keydown');
+    Mousetrap.bind('d', client.controlEvent({ event: 'player.move', power: 0 }), 'keyup');  
+
+    // Rotation
+    Mousetrap.bind('left', client.controlEvent({ event: 'player.rotate', direction: 'left', power: 1 }), 'keydown');
+    Mousetrap.bind('left', client.controlEvent({ event: 'player.rotate', power: 0 }), 'keyup');
+    Mousetrap.bind('right', client.controlEvent({ event: 'player.rotate', direction: 'right', power: 1 }), 'keydown');
+    Mousetrap.bind('right', client.controlEvent({ event: 'player.rotate', power: 0 }), 'keyup');
+
+    //// Abilities
+    //Mousetrap.bind('.', client.controlEvent({ event: 'player.move', direction: '' });
+    //Mousetrap.bind('.', client.controlEvent({ event: 'player.move', direction: '' });
+    //Mousetrap.bind(',', client.controlEvent({ event: 'player.move', direction: '' });
+    //Mousetrap.bind(',', client.controlEvent({ event: 'player.move', direction: '' });
+    //Mousetrap.bind('m', client.controlEvent({ event: 'player.move', direction: '' });
+    //Mousetrap.bind('m', client.controlEvent({ event: 'player.move', direction: '' });
+  }
   
   client.markPlayerReady = function() {
     client.sendMessage({ event: 'init.ready' });
@@ -105,6 +135,7 @@ function GameClient(path) {
   client.startPlaying = function(e) {
     client.renderer = Renderer("viewport", client);
     client.renderer.start();
+    client.bindControls();
   }
 
   client.handleEvent = function(action) {
@@ -113,6 +144,17 @@ function GameClient(path) {
     }
     console.log(`handling event [${action.event}]`, action);
     switch (action.event) {
+      case 'entity.move': {
+        const entity = client.state.entities[action.id];
+        entity.x = action.location.x;
+        entity.y = action.location.y;
+        break;
+      }
+      case 'entity.rotate': {
+        const entity = client.state.entities[action.id];
+        entity.orientation = action.orientation;
+        break;
+      }
       case 'entity.spawn': {
         client.state.entities[action.entity.id] = action.entity;
         break;
@@ -147,7 +189,6 @@ function GameClient(path) {
         break;
       }
     }
-
   }
 
 

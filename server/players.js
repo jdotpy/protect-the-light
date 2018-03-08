@@ -1,4 +1,5 @@
 const Entities = require('./entities');
+const Events = require('./events');
 const uuid = require('uuid/v4');
 
 function errorMessage(message) {
@@ -16,6 +17,8 @@ function Player(socket, game) {
     role: null,
     name: null,
     ready: false,
+    rotation: {},
+    movement: {},
   };
 
   player.sendMessage = function(message) {
@@ -46,6 +49,38 @@ function Player(socket, game) {
     // This method handles all websocket messages from the user
     console.log('player received message', message);
     switch (message.event) {
+      case 'player.move': {
+        let angle;
+        if (message.direction === 'up') {
+          angle = 90;
+        }
+        else if (message.direction === 'down') { 
+          angle = 270;
+        }
+        else if (message.direction === 'right') { 
+          angle = 0;
+        }
+        else if (message.direction === 'left') { 
+          angle = 180;
+        }
+        else {
+          angle = message.direction || 0;
+          angle = angle % 360;
+        }
+        player.movement = { angle, power: message.power || 0 };
+        return true;
+      }
+      case 'player.rotate': {
+        let angle;
+        if (message.direction === 'right') {
+          angle = -20;
+        }
+        else {
+          angle = 20;
+        }
+        player.rotation = { angle, power: message.power || 0 };
+        return true;
+      }
       case 'init.chooseName': {
         player.name = message.name.slice(0, MAX_NAME_LENGTH);
         game.playerUpdated(player);
@@ -80,7 +115,23 @@ function Player(socket, game) {
     }
   }
 
-  player.logic = function() {
+  player.logic = function(map, loopTime, elapsed) {
+    if (player.movement.power) {
+      player.character.applyVelocity(
+        player.movement.angle,
+        player.movement.power * player.character.speed * elapsed,
+      );
+      map.stateUpdates.add(Events.entityMove(player.character));
+    }
+    if (player.rotation.power) {
+      let rotationValue = player.rotation.power * player.rotation.angle * elapsed;
+      if (player.rotation.direction === 'right') {
+        rotationValue = rotationValue * -1;
+      }
+      player.character.applyRotation(rotationValue);
+      map.stateUpdates.add(Events.entityRotate(player.character));
+    }
+
     return [];
   }
 

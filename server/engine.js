@@ -89,12 +89,11 @@ function Game() {
     game.loopCount = game.loopCount + 1;
     const loopTime = utils.preciseTime();
     const elapsed = loopTime - game.lastLoopTime;
-    game.lastLoopTime = loopTime;
     if (Math.round(loopTime) > Math.round(game.lastLoopTime)) {
-      console.log(`Loop rate: ${game.loopCount}loops/second`);
+      console.log(`Loop rate: ${game.loopCount} loops/second`);
       game.loopCount = 0;
     }
-    console.log('game loop', loopTime, 'elapsed:', elapsed);
+    game.lastLoopTime = loopTime;
 
     // Do status-specific logic
     game.logic(loopTime, elapsed);
@@ -102,7 +101,7 @@ function Game() {
 
     // Schedule next loop
     //setImmediate(game.loop);
-    setTimeout(game.loop, 1000);
+    setTimeout(game.loop, 50);
   }
 
   game.sendStateUpdate = function(updates) {
@@ -116,7 +115,6 @@ function Game() {
       status: game.status,
       updates: game.stateUpdates.drain(),
     };
-    console.log(message);
     const messageStr = JSON.stringify(message);
     for (const player of game.players) {
       player.sendMessage(messageStr);
