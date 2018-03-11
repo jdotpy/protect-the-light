@@ -5,6 +5,8 @@ document.uiState = {
   init: {},
 };
 
+Vue.config.performance = true;
+
 const app = new Vue({
   el: '#ui',
   data: document.uiState,

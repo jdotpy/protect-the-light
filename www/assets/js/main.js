@@ -53,7 +53,6 @@ function GameClient(path) {
   client.onServerMessage = function(e) {
     const message = JSON.parse(e.data);
     if (message.event === 'state') {
-      client.state.status = message.status;
       for (const action of message.updates) {
         client.handleEvent(action);
       }
@@ -82,12 +81,21 @@ function GameClient(path) {
     client.socket.send(JSON.stringify(message));
   }
 
+  client.getCurrentPlayer = function() {
+    return client.state.players[client.state.playerID];
+  }
+
+  client.getCurrentPlayerEntity = function() {
+    const entityID = client.getCurrentPlayer().entityID;
+    return client.state.entities[entityID];
+  }
+
   client.updateUI = function() {
     // Setting this attribute will trigger a new UI render
     document.uiState.game = {
       connected: client.state.connected,
       status: client.state.status,
-      players: values(client.state.players || {}),
+      players: values(client.state.players || {}).map((v) => Object.assign({}, v)),
       playerID: client.state.playerID,
     };
   }
@@ -140,6 +148,7 @@ function GameClient(path) {
 
   client.handleEvent = function(action) {
     if (uiUpdateEvents[action.event]) {
+      console.log('marking UI as stale');
       client.uiStale = true; 
     }
     console.log(`handling event [${action.event}]`, action);
@@ -157,10 +166,14 @@ function GameClient(path) {
       }
       case 'entity.spawn': {
         client.state.entities[action.entity.id] = action.entity;
+        if  (action.entity.playerID) {
+          client.state.players[action.entity.playerID].entityID = action.entity.id;
+        }
         break;
       }
       case 'game.start': {
         client.state.map = action.map;
+        client.state.status = action.status;
         client.startPlaying(action);
         break;
       }
@@ -201,6 +214,27 @@ function GameClient(path) {
   return client;
 }
 
+function Layer(index, options) {
+  const canvas = document.createElement('canvas');
+  canvas.width = options.width;
+  canvas.height = options.height;
+  const layer = {
+    index,
+    canvas,
+    ctx: canvas.getContext('2d'),
+    height: options.height,
+    width: options.width,
+    draw: options.draw,
+  };
+  // Manage styles & visibility
+  if (!options.hidden) {
+    document.body.appendChild(canvas);
+    canvas.style['z-index'] = index;
+    canvas.style['position'] = 'absolute';
+  }
+  return layer;
+}
+
 const ENTITY_RENDERERS = {
   'archer': (renderer, ctx, entity) => {
     // We'll eventually want orientation:
@@ -208,92 +242,125 @@ const ENTITY_RENDERERS = {
     //  ctx.setTransform(1, 0, 0, 1, 0, 0);
     const location = renderer.translateCoords(entity.x, entity.y);
     const size = entity.size * renderer.SCALE_FACTOR;
-    const radius = size / 2;
+    const radius = Math.floor(size / 2);
     ctx.fillStyle = '#000';
     ctx.fillRect(location.x - radius, location.y - radius, size, size);
   },
   'fire-tower': (renderer, ctx, entity) => {
     const location = renderer.translateCoords(entity.x, entity.y);
     const size = entity.size * renderer.SCALE_FACTOR;
-    const radius = size / 2;
+    const radius = Math.floor(size / 2);
     ctx.fillStyle = '#a37954';
     ctx.fillRect(location.x - radius, location.y - radius, size, size);
   },
 }
 
 function Renderer(viewport, client) {
+  const SCALE_FACTOR =  50;
   const renderer = {
-    SCALE_FACTOR: 50,
-    canvas: document.getElementById(viewport),
+    SCALE_FACTOR,
+    frame: 0,
+    mapRadius: client.state.map.radius * SCALE_FACTOR,
+    mapDiameter: (client.state.map.radius * 2) * SCALE_FACTOR,
   };
+
+  renderer.layers = {
+    background: Layer(1, {
+      width: renderer.mapDiameter,
+      height: renderer.mapDiameter,
+      draw: function(state) {
+        const mapCenter = renderer.translateCoords(0, 0);
+        this.ctx.arc(
+          mapCenter.x,
+          mapCenter.y,
+          renderer.SCALE_FACTOR * state.map.radius,
+          0,
+          Math.PI * 2
+        );
+        this.ctx.fillStyle = '#00dd00';
+        this.ctx.fill();
+      },
+    }),
+    entities: Layer(2, {
+      width: renderer.mapDiameter,
+      height: renderer.mapDiameter,
+      draw: function(state) {
+        for (const entity of values(state.entities)) {
+          const er = ENTITY_RENDERERS[entity.type];
+          er(renderer, this.ctx, entity);
+        }
+      },
+    }),
+  }
   
   renderer.start = function() {
     renderer.autoSize();
-    renderer.ctx = this.canvas.getContext('2d');
+
+    renderer.lastFrameStart = new Date();
+    renderer.layers.background.draw(client.state);
     renderer.draw();
     document.renderer = renderer;
   }
 
   renderer.autoSize = function() {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    renderer.canvas.width = width;
-    renderer.canvas.height = height;
-    renderer.width = width;
-    renderer.height = height;
-    renderer.center = {x: width / 2, y: height / 2};
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    renderer.viewportWidth = windowWidth;
+    renderer.viewportHeight = windowHeight;
+    renderer.center = {x: windowWidth / 2, y: windowHeight / 2};
   }
 
   renderer.setCameraLocation = function() {
-    // This might track the player's coords
-    const location = { x: 0, y: 0 };
-    renderer.cameraLocation = {
-      x: location.x * renderer.SCALE_FACTOR,
-      y: location.y * renderer.SCALE_FACTOR * -1, // Y axis is flipped in canvas
-    };
+    const playerEntity = client.getCurrentPlayerEntity();
+    let location;
+    if (playerEntity) {
+      location = { x: playerEntity.x, y: playerEntity.y };
+    }
+    else {
+      location = { x: 0, y: 0 };
+    }
+
+    // Keep track of where on the map we are located over
+    renderer.cameraLocation = renderer.translateCoords(location.x, location.y);
+
+    // Now update the canvas locations to show the correct area
+    const leftOffset = -1 * (renderer.cameraLocation.x - (renderer.viewportWidth / 2));
+    const topOffset = -1 * (renderer.cameraLocation.y - (renderer.viewportHeight / 2));
+    const cssTop = `${topOffset}px`;
+    const cssLeft = `${leftOffset}px`;
+    for (const layer of values(renderer.layers)) {
+      layer.canvas.style.top = cssTop;
+      layer.canvas.style.left = cssLeft;
+    }
   }
 
   renderer.translateCoords = function(x, y) {
     let mapX = x * renderer.SCALE_FACTOR;
     let mapY = y * renderer.SCALE_FACTOR * -1; // Y axis is flipped in canvas
 
-    mapX = mapX + renderer.center.x - renderer.cameraLocation.x;
-    mapY = mapY + renderer.center.y - renderer.cameraLocation.y;
-    return { x: mapX, y: mapY };
+    mapX = mapX + renderer.mapRadius;
+    mapY = mapY + renderer.mapRadius;
+    return { x: Math.floor(mapX), y: Math.floor(mapY) };
   }
 
   renderer.draw = function() {
-    const drawStart = new Date();
+    const frameStart = new Date();
+    if (renderer.lastFrameStart.getSeconds() !== frameStart.getSeconds()) {
+      console.log(`${renderer.frame} FPS (last frame time: ${renderer.lastFrameTime} ms)`)
+      renderer.frame = 0;
+    }
+    renderer.frame += 1;
+    renderer.lastFrameStart = frameStart;
     
-    const ctx = renderer.ctx;
-    // Update camera location
+    // Update camera location in case we're centered on an entity that has moved
+    renderer.autoSize();
     renderer.setCameraLocation();
 
-    // Draw helpful background of black
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, renderer.width, renderer.height);
-
-    // Draw map 
-    const mapCenter = renderer.translateCoords(0, 0);
-    ctx.arc(
-      mapCenter.x,
-      mapCenter.y,
-      renderer.SCALE_FACTOR * client.state.map.radius,
-      0,
-      Math.PI * 2
-    );
-    ctx.fillStyle = '#00dd00';
-    ctx.fill();
-
-    // Draw entities
-    for (const entity of values(client.state.entities)) {
-      const er = ENTITY_RENDERERS[entity.type];
-      er(renderer, ctx, entity);
-    }
-
-    // TODO: Draw animations
+    // Re-Draw entities every frame
+    renderer.layers.entities.draw(client.state);
     
     // Now do this about 60fps
+    renderer.lastFrameTime = new Date().valueOf() - frameStart.valueOf();
     window.requestAnimationFrame(renderer.draw);
   }
   return renderer;

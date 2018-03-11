@@ -50,7 +50,7 @@ function Game() {
 
   game.startPlaying = function() {
     game.status = 'playing';
-    game.stateUpdates.add(Events.startPlaying(game.map));
+    game.stateUpdates.add(Events.startPlaying(game));
     game.map.start()
   }
 
@@ -101,7 +101,7 @@ function Game() {
 
     // Schedule next loop
     //setImmediate(game.loop);
-    setTimeout(game.loop, 50);
+    setTimeout(game.loop, 49);
   }
 
   game.sendStateUpdate = function(updates) {

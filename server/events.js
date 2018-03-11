@@ -26,9 +26,10 @@ const EVENTS = {
     entity: entity.stateDetails(),
   }),
 
-  startPlaying: (map) => ({
+  startPlaying: (game) => ({
     event: 'game.start',
-    map: map.stateDetails(),
+    status: game.status,
+    map: game.map.stateDetails(),
   }),
 
   playerAssignCharacter: (player, entity) => ({
