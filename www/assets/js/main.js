@@ -34,6 +34,37 @@ function websocketUrl(path) {
   return `${protocol}//${loc.host}${path}`
 }
 
+function toRGBA(color, alpha) {
+  return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
+}
+
+function drawRadialGradient(ctx, x, y, radius, options) {
+  const colors = options.colors || [
+    [255, 255, 255],
+    [255, 255, 255],
+  ];
+  const intensity = options.intensity || [1, 0];
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  gradient.addColorStop(0, toRGBA(colors[0], intensity[0]));
+  gradient.addColorStop(1, toRGBA(colors[1], intensity[1]));
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x - radius, y - radius, (x + radius), (y + radius));
+}
+
+function cacher(f) {
+  const cache = {};
+  return function() {
+    const cacheKey = JSON.stringify(arguments);
+    if (cache[cacheKey]) {
+      return cache[cacheKey];
+    }
+    const value = f.apply(null, arguments);
+    cache[cacheKey] = value;
+    return value;
+  }
+}
+
 function GameClient(path) {
   const client = {};
   client.state = {
@@ -225,15 +256,29 @@ function Layer(index, options) {
     height: options.height,
     width: options.width,
     draw: options.draw,
+    clear: function() {
+      this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
   };
   // Manage styles & visibility
-  if (!options.hidden) {
-    document.body.appendChild(canvas);
-    canvas.style['z-index'] = index;
-    canvas.style['position'] = 'absolute';
+  if (options.hidden) {
+    canvas.style.display = 'none';
   }
+  canvas.style['z-index'] = index;
+  canvas.style['position'] = 'absolute';
+  document.body.appendChild(canvas);
   return layer;
 }
+
+const getCachedRadialImage = cacher(function(radius, options) {
+  const layer = Layer(101, {
+    width: radius * 2,
+    height: radius * 2,
+    hidden: true,
+  });
+  drawRadialGradient(layer.ctx, radius, radius, radius, options || {});
+  return layer.canvas;
+})
 
 const ENTITY_RENDERERS = {
   'archer': (renderer, ctx, entity) => {
@@ -289,6 +334,71 @@ function Renderer(viewport, client) {
           const er = ENTITY_RENDERERS[entity.type];
           er(renderer, this.ctx, entity);
         }
+      },
+    }),
+    lighting: Layer(3, {
+      width: renderer.mapDiameter,
+      height: renderer.mapDiameter,
+      badDraw: function(state) {
+        /*
+         * This draw is a bad idea as it effectively skirts the illuminated library's
+         * caching. This causes extreme memory leaks and will crash the browser within
+         * 30 seconds.
+         *
+         * I want to refactor this to pull out just the parts I need as I don't actually
+         * need 90% of the lirbary. Leaving it here as a reference as I re-implement.
+         */
+        this.clear();
+
+        const lamps = values(state.entities).map((e) => {
+          const pos = renderer.translateCoords(e.x, e.y);
+          return new illuminated.Lamp({
+            position: new illuminated.Vec2(pos.x, pos.y),
+            distance: 200,
+          });
+        })
+        this.ctx.globalCompositeOperation = "lighter";
+        for (const lamp of lamps) {
+          const lighting = new illuminated.Lighting({ light: lamp, objects: [] });
+          lighting.compute(this.canvas.width, this.canvas.height);
+          lighting.render(this.ctx);
+        }
+        this.ctx.globalCompositeOperation = "source-over";
+        const darkmask = new illuminated.DarkMask({ lights: lamps });
+        darkmask.compute(this.canvas.width, this.canvas.height);
+        darkmask.render(this.ctx);
+      },
+      draw: function(state) {
+        this.clear();
+        
+        this.ctx.save()
+        const lamps = values(state.entities);
+        for (const lamp of lamps) {
+          const pos = renderer.translateCoords(lamp.x, lamp.y);
+          drawRadialGradient(this.ctx, pos.x, pos.y, 200, {
+            colors: [[255, 238, 114], [0, 0, 0]],
+            intensity: [.2, 0],
+          });
+        }
+        this.ctx.restore()
+        // Manage a cached sub-layer for masking
+        if (!this.maskLayer) {
+          this.maskLayer = Layer(0, { width: this.width, height: this.height, hidden: true });
+        }
+        this.maskLayer.clear();
+        this.maskLayer.ctx.globalCompositeOperation = "source-over";
+        this.maskLayer.ctx.beginPath();
+        this.maskLayer.ctx.fillStyle = '#000';
+        this.maskLayer.ctx.fillRect(0, 0, this.width, this.height);
+        this.maskLayer.ctx.beginPath();
+
+        this.maskLayer.ctx.globalCompositeOperation = "destination-out";
+        const lampMask = getCachedRadialImage(200, {});
+        for (const lamp of lamps) {
+          const pos = renderer.translateCoords(lamp.x, lamp.y);
+          this.maskLayer.ctx.drawImage(lampMask, pos.x - 200, pos.y - 200);
+        }
+        this.ctx.drawImage(this.maskLayer.canvas, 0, 0)
       },
     }),
   }
@@ -357,7 +467,11 @@ function Renderer(viewport, client) {
     renderer.setCameraLocation();
 
     // Re-Draw entities every frame
+    renderer.layers.entities.clear();
     renderer.layers.entities.draw(client.state);
+
+    // Re-Draw lighting
+    renderer.layers.lighting.draw(client.state);
     
     // Now do this about 60fps
     renderer.lastFrameTime = new Date().valueOf() - frameStart.valueOf();
