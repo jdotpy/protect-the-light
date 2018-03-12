@@ -309,6 +309,11 @@ function Renderer(viewport, client) {
     mapDiameter: (client.state.map.radius * 2) * SCALE_FACTOR,
   };
 
+  renderer.getImageAsset = function(id) {
+    const ele = document.getElementById(id);
+    return ele;
+  }
+
   renderer.layers = {
     background: Layer(1, {
       width: renderer.mapDiameter,
@@ -322,7 +327,12 @@ function Renderer(viewport, client) {
           0,
           Math.PI * 2
         );
-        this.ctx.fillStyle = '#00dd00';
+        const pattern = this.ctx.createPattern(
+          renderer.getImageAsset('img_texture_grass'),
+          'repeat'
+        );
+        this.ctx.fillStyle = pattern;
+        //this.ctx.fillStyle = '#00dd00';
         this.ctx.fill();
       },
     }),
