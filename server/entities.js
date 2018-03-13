@@ -11,6 +11,7 @@ const BaseEntity = {
 
   __init__: function() {
     this.id = uuid();
+    this.health = this.hp;
   },
 
   distanceBetween: function(target) {
@@ -40,6 +41,8 @@ const BaseEntity = {
       type: this.type,
       size: this.size,
       orientation: this.orientation,
+      health: this.health,
+      light: this.light,
       hp: this.hp,
       x: this.x,
       y: this.y,
@@ -78,6 +81,15 @@ function FireTower() {
   return tower;
 }
 
+function Torch(options) {
+  const torch = BaseEntity.extend({
+    type: 'torch',
+    hp: 10,
+    light: options.light || 5,
+  });
+  return torch;
+}
+
 const PLAYER_ROLES = {
   archer: Archer,
 }
@@ -87,4 +99,5 @@ module.exports = {
   Archer,
   BasicEnemy,
   FireTower,
+  Torch,
 }

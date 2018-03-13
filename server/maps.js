@@ -39,6 +39,7 @@ function BasicMap(players) {
   map.start = function() {
     // Spawn Fire Tower
     map.spawn(Entities.FireTower(), 0, 0);
+    map.spawn(Entities.Torch({ light: 10 }), 0, 0);
 
     // Spawn players
     for (const player of map.players) {
