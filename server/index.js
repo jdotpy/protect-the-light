@@ -1,3 +1,5 @@
+require('proto-utils');
+
 const Koa = require('koa');
 const route = require('koa-route');
 const websockify = require('koa-websocket');

@@ -1,7 +1,7 @@
 const Events = require('./events');
 const uuid = require('uuid/v4');
 
-const BaseEntity = {
+const BaseEntity = Object.extend({
   id: null,
   type: null,
   x: null, // Every entity has a location defined by x,y coords but they are overriden 
@@ -57,38 +57,32 @@ const BaseEntity = {
   collisionRadius: function() {
     return this.size;
   }
-}
+});
 
-function Archer(playerID) {
-  const character = BaseEntity.extend({
-    playerID,
-    type: 'archer',
-    size: 1,
-    hp: 50,
-    speed: 2,
-    speed: 2,
-  });
-  return character;
-}
+const Archer = BaseEntity.extend({
+  type: 'archer',
+  size: 1,
+  hp: 50,
+  speed: 3,
+});
 
-function BasicEnemy() {
-  const enemy = BaseEntity.extend({ type: 'basic-enemy', hp: 10, size: 1 });
-  return enemy;
-}
+const BasicEnemy = BaseEntity.extend({
+  type: 'basic-enemy',
+  hp: 10,
+  size: 1
+});
 
-function FireTower() {
-  const tower = BaseEntity.extend({ type: 'fire-tower', hp: 100, size: 2 });
-  return tower;
-}
+const FireTower = BaseEntity.extend({
+  type: 'fire-tower',
+  hp: 100,
+  size: 2,
+});
 
-function Torch(options) {
-  const torch = BaseEntity.extend({
-    type: 'torch',
-    hp: 10,
-    light: options.light || 5,
-  });
-  return torch;
-}
+const Torch = BaseEntity.extend({
+  type: 'torch',
+  hp: 10,
+  light: 5,
+})
 
 const PLAYER_ROLES = {
   archer: Archer,

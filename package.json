@@ -13,6 +13,7 @@
     "koa-route": "^3.2.0",
     "koa-static": "^4.0.2",
     "koa-websocket": "^4.1.0",
+    "proto-utils": "git+https://github.com/jdotpy/js-proto-utils.git#1.0.0",
     "uuid": "^3.2.1"
   },
   "devDependencies": {

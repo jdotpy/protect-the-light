@@ -1,12 +1,3 @@
-// Make extending objects have a nice syntax
-Object.prototype.extend = function(subject) {
-  subject.__proto__ = this
-  if (subject.__init__) {
-    subject.__init__();
-  }
-  return subject;
-};
-
 Array.prototype.remove = function(item){
     this.splice(this.indexOf(item), 1);
 };

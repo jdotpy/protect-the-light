@@ -38,12 +38,12 @@ function BasicMap(players) {
 
   map.start = function() {
     // Spawn Fire Tower
-    map.spawn(Entities.FireTower(), 0, 0);
-    map.spawn(Entities.Torch({ light: 10 }), 0, 0);
+    map.spawn(Entities.FireTower.new(), 0, 0);
+    map.spawn(Entities.Torch.new({ light: 10 }), 0, 0);
 
     // Spawn players
     for (const player of map.players) {
-      const character = Entities.PLAYER_ROLES[player.role](player.id);
+      const character = Entities.PLAYER_ROLES[player.role].new({ playerId: player.id });
       player.character = character;
       map.spawn(character, -2, -2);
     }
