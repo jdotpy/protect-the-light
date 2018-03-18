@@ -62,7 +62,7 @@ const getCachedRadialImage = cacher(function(radius, options) {
   return layer.canvas;
 })
 
-const ENTITY_RENDERERS = {
+const RENDERERS = {
   'archer': (renderer, ctx, entity) => {
     // We'll eventually want orientation:
     //  ctx.rotate(45 * Math.PI / 180);
@@ -98,6 +98,47 @@ const ENTITY_RENDERERS = {
       ],
     });
     ctx.drawImage(flame, location.x - radius, location.y - radius);
+  },
+  'unitFrame': (renderer, ctx, entity) => {
+    const barHeight = 10;
+    const location = renderer.translateCoords(entity.x, entity.y);
+    const size = entity.size * renderer.SCALE_FACTOR;
+
+    // We want the bottom left corner of the entity
+    const startX = location.x - (size / 2);
+    const startY = location.y + (size / 2);
+
+    // Give a base rectangle on which to draw so low-health
+    // entities aren't just transparent
+    ctx.fillStyle = '#777';
+    ctx.fillRect(startX, startY, size, barHeight);
+
+    // Draw the rect representing the current health state as a
+    // percentage of the width
+    const healthPct = entity.health / entity.hp;
+    const fillSize = Math.round(healthPct * size);
+
+    let healthColor;
+    if (healthPct <= .15) {
+      healthColor = '#b70000';
+    }
+    else if (healthPct <= .40) {
+      healthColor = '#d8d800';
+    }
+    else {
+      healthColor = '#00b70c';
+    }
+    ctx.fillStyle = healthColor;
+    ctx.fillRect(startX, startY, fillSize, barHeight);
+
+    // If the unit is a player, draw the name
+    if (entity.playerID) {
+      const name = entity.player.name;
+      ctx.fillStyle = '#000000';
+      ctx.font = barHeight.toString() + 'px Arial';
+      ctx.fillText(name,startX,startY + barHeight);
+      // Draw name
+    }
   },
 }
 
@@ -141,8 +182,9 @@ function Renderer(viewport, client) {
       width: renderer.mapDiameter,
       height: renderer.mapDiameter,
       draw: function(state) {
+        this.clear();
         for (const entity of values(state.entities)) {
-          const er = ENTITY_RENDERERS[entity.type];
+          const er = RENDERERS[entity.type];
           er(renderer, this.ctx, entity);
         }
       },
@@ -183,6 +225,21 @@ function Renderer(viewport, client) {
           this.maskLayer.ctx.drawImage(lampMask, pos.x - radius, pos.y - radius);
         }
         this.ctx.drawImage(this.maskLayer.canvas, 0, 0)
+      },
+    }),
+    unitFrames: Layer(3, {
+      width: renderer.mapDiameter,
+      height: renderer.mapDiameter,
+      draw: function(state) {
+        this.clear();
+
+        const ufRenderer = RENDERERS.unitFrame;
+        for (const entity of values(state.entities)) {
+          if (!entity.health) {
+            continue
+          }
+          ufRenderer(renderer, this.ctx, entity);
+        }
       },
     }),
   }
@@ -251,11 +308,13 @@ function Renderer(viewport, client) {
     renderer.setCameraLocation();
 
     // Re-Draw entities every frame
-    renderer.layers.entities.clear();
     renderer.layers.entities.draw(client.state);
 
     // Re-Draw lighting
     renderer.layers.lighting.draw(client.state);
+
+    // Re-Draw unit frames (health and nameplates)
+    renderer.layers.unitFrames.draw(client.state);
     
     // Now do this about 60fps
     renderer.lastFrameTime = new Date().valueOf() - frameStart.valueOf();

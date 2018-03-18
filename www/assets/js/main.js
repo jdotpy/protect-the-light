@@ -130,8 +130,10 @@ function GameClient(path) {
       }
       case 'entity.spawn': {
         client.state.entities[action.entity.id] = action.entity;
-        if  (action.entity.playerID) {
-          client.state.players[action.entity.playerID].entityID = action.entity.id;
+        if (action.entity.playerID) {
+          const player = client.state.players[action.entity.playerID];
+          player.entityID = action.entity.id;
+          action.entity.player = player;
         }
         break;
       }

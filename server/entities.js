@@ -11,7 +11,7 @@ const BaseEntity = Object.extend({
 
   __init__: function() {
     this.id = uuid();
-    this.health = this.hp;
+    this.health = Math.random() * this.hp;
   },
 
   distanceBetween: function(target) {

@@ -43,7 +43,7 @@ function BasicMap(players) {
 
     // Spawn players
     for (const player of map.players) {
-      const character = Entities.PLAYER_ROLES[player.role].new({ playerId: player.id });
+      const character = Entities.PLAYER_ROLES[player.role].new({ playerID: player.id });
       player.character = character;
       map.spawn(character, -2, -2);
     }
