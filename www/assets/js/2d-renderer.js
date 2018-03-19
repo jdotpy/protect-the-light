@@ -3,6 +3,12 @@ function toRGBA(color, alpha) {
   return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
 }
 
+function setBounds(value, min, max) {
+  value = Math.min(value, max);
+  value = Math.max(value, min);
+  return value;
+}
+
 function drawRadialGradient(ctx, x, y, radius, options) {
   const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
   if (options.stops) {
@@ -98,6 +104,13 @@ const RENDERERS = {
       ],
     });
     ctx.drawImage(flame, location.x - radius, location.y - radius);
+  },
+  'skele': (renderer, ctx, entity) => {
+    const location = renderer.translateCoords(entity.x, entity.y);
+    const size = entity.size * renderer.SCALE_FACTOR;
+    const radius = Math.floor(size / 2);
+    ctx.fillStyle = '#eee';
+    ctx.fillRect(location.x - radius, location.y - radius, size, size);
   },
   'unitFrame': (renderer, ctx, entity) => {
     const barHeight = 10;
@@ -274,9 +287,17 @@ function Renderer(viewport, client) {
     // Keep track of where on the map we are located over
     renderer.cameraLocation = renderer.translateCoords(location.x, location.y);
 
+    let leftOffset = -1 * (renderer.cameraLocation.x - (renderer.viewportWidth / 2));
+    let topOffset = -1 * (renderer.cameraLocation.y - (renderer.viewportHeight / 2));
+    const leftMin = -1 * (renderer.mapDiameter - renderer.viewportWidth);
+    const topMin = -1 * (renderer.mapDiameter - renderer.viewportHeight);
+    
+
+    // Dont show off-map if we can help it
+    leftOffset = setBounds(leftOffset, leftMin, 0);
+    topOffset = setBounds(topOffset, topMin, 0);
+
     // Now update the canvas locations to show the correct area
-    const leftOffset = -1 * (renderer.cameraLocation.x - (renderer.viewportWidth / 2));
-    const topOffset = -1 * (renderer.cameraLocation.y - (renderer.viewportHeight / 2));
     const cssTop = `${topOffset}px`;
     const cssLeft = `${leftOffset}px`;
     for (const layer of values(renderer.layers)) {

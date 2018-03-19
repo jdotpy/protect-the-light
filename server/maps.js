@@ -36,6 +36,40 @@ function BasicMap(players) {
     map.stateUpdates.add(Events.spawn(entity));
   }
 
+  map.moveEntity = function(mover, target) {
+    const collisions = [];
+    let blocked = false;
+
+    for (const entity of map.entities) {
+      // Dont collide with yourself
+      if (entity === mover) {
+        continue
+      }
+      const collisionDistance = entity.collisionRadius() + mover.collisionRadius();
+      const distanceFromTarget = entity.distanceBetween(target);
+
+      if (distanceFromTarget < collisionDistance) {
+        // We're colliding, now determine if we are moving away or towards
+        const distanceFromSource = entity.distanceBetween(mover);
+        if (distanceFromSource >= distanceFromTarget) {
+          // We're moving towards the object
+          blocked = true;
+          collisions.push({ towards: true, entity });
+        }
+        else {
+          // We're moving away from the object, allow movement
+          collisions.push({ towards: false, entity });
+        }
+      }
+    }
+    // Now if we didn't get blocked by a collision go ahead with relocation
+    if (!blocked) {
+      mover.x = target.x;
+      mover.y = target.y;
+    }
+    return collisions;
+  }
+
   map.start = function() {
     // Spawn Fire Tower
     map.spawn(Entities.FireTower.new(), 0, 0);
@@ -47,11 +81,24 @@ function BasicMap(players) {
       player.character = character;
       map.spawn(character, -2, -2);
     }
+
+    // Spawn enemies
+    map.spawn(Entities.EnemySkeleton.new(), 0, 5);
   }
 
   map.logic = function(loopTime, elapsed) {
+    // Logic for player entities
     for (const player of map.players) {
       player.logic(map, loopTime, elapsed);
+    }
+    // Logic for all non-player entities
+    for (const entity of map.entities) {
+      if (entity.playerID) {
+        continue;
+      }
+      if (entity.logic) {
+        entity.logic(map, loopTime, elapsed);
+      }
     }
     return map.stateUpdates.drain();
   }

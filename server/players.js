@@ -118,6 +118,7 @@ function Player(socket, game) {
   player.logic = function(map, loopTime, elapsed) {
     if (player.movement.power) {
       player.character.applyVelocity(
+        map,
         player.movement.angle,
         player.movement.power * player.character.speed * elapsed,
       );

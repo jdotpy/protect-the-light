@@ -11,7 +11,7 @@ const BaseEntity = Object.extend({
 
   __init__: function() {
     this.id = uuid();
-    this.health = Math.random() * this.hp;
+    this.health = this.hp;
   },
 
   distanceBetween: function(target) {
@@ -22,13 +22,14 @@ const BaseEntity = Object.extend({
     );
   },
 
-  applyVelocity: function(angle, speed) {
+  applyVelocity: function(map, angle, speed) {
     const radians = angle * (Math.PI / 180);
     const vy = Math.sin(radians) * speed;
     const vx = Math.cos(radians) * speed;
 
-    this.x = this.x + vx;
-    this.y = this.y + vy;
+    const target = { x: this.x + vx, y: this.y + vy };
+    const collisions = map.moveEntity(this, target);
+    return collisions;
   },
 
   applyRotation: function(degrees) {
@@ -55,21 +56,29 @@ const BaseEntity = Object.extend({
   },
 
   collisionRadius: function() {
-    return this.size;
+    return this.size / 2;
   }
 });
 
 const Archer = BaseEntity.extend({
   type: 'archer',
-  size: 1,
   hp: 50,
   speed: 3,
 });
 
-const BasicEnemy = BaseEntity.extend({
-  type: 'basic-enemy',
+const EnemyAI = BaseEntity.extend({
+  __init__: function __init__() {
+    this.super(__init__)();
+  },
+  logic: function(map, loopTime, elapsed) {
+    
+  },
+});
+
+const EnemySkeleton = EnemyAI.extend({
+  type: 'skele',
   hp: 10,
-  size: 1
+  speed: 2.5,
 });
 
 const FireTower = BaseEntity.extend({
@@ -91,7 +100,7 @@ const PLAYER_ROLES = {
 module.exports = {
   PLAYER_ROLES,
   Archer,
-  BasicEnemy,
+  EnemySkeleton,
   FireTower,
   Torch,
 }
