@@ -1,3 +1,8 @@
+function getDegreeOfAngle(dx, dy) {
+  const radians = Math.atan2(dy, dx);
+  return radians / (Math.PI / 180);
+}
+
 function GameClient(path) {
   const client = {};
   client.state = {
@@ -16,9 +21,6 @@ function GameClient(path) {
 
   client.onServerMessage = function(e) {
     const message = JSON.parse(e.data);
-    if (message.event === 'pong') {
-      client.handlePingResponse();
-    }
     if (message.event === 'state') {
       for (const action of message.updates) {
         client.handleEvent(action);
@@ -84,6 +86,8 @@ function GameClient(path) {
     client.sendMessage({ event: 'init.chooseRole', role });
   }
 
+  client.sen
+
   client.controlEvent = function(event) {
     return () => {
       if (event === client._lastControlEvent) {
@@ -96,15 +100,64 @@ function GameClient(path) {
   }
 
   client.bindControls = function() {
+    const movementControls = { up: 0,};
+
+    function sendMovementUpdate() {
+      let dy = 0;
+      let dx = 0;
+      let power = 0;
+
+      // Y Axis
+      if (movementControls.up && movementControls.down) {
+        dy = 0;
+      }
+      else if (movementControls.up) {
+        dy = 1;
+      }
+      else if (movementControls.down) {
+        dy = -1;
+      }
+
+      // X Axis 
+      if (movementControls.left && movementControls.right) {
+        dx = 0;
+      }
+      else if (movementControls.right) {
+        dx = 1;
+      }
+      else if (movementControls.left) {
+        dx = -1;
+      }
+
+      if (dx || dy) {
+        power = 1;
+      }
+      const angle = getDegreeOfAngle(dx, dy);
+
+      client.playerMovement = { angle, power };
+      client.sendMessage({
+        event: 'player.move',
+        direction: angle,
+        power: power
+      });
+    }
+
+    function updateMovement(direction, value) {
+      return () => {
+        movementControls[direction] = value;
+        sendMovementUpdate();
+      }
+    };
+
     // compass movement
-    Mousetrap.bind('w', client.controlEvent({ event: 'player.move', power: 1, direction: 'up' }), 'keydown');
-    Mousetrap.bind('w', client.controlEvent({ event: 'player.move', power: 0 }), 'keyup');  
-    Mousetrap.bind('s', client.controlEvent({ event: 'player.move', power: 1, direction: 'down' }), 'keydown');
-    Mousetrap.bind('s', client.controlEvent({ event: 'player.move', power: 0 }), 'keyup');  
-    Mousetrap.bind('a', client.controlEvent({ event: 'player.move', power: 1, direction: 'left' }), 'keydown');
-    Mousetrap.bind('a', client.controlEvent({ event: 'player.move', power: 0 }), 'keyup');  
-    Mousetrap.bind('d', client.controlEvent({ event: 'player.move', power: 1, direction: 'right' }), 'keydown');
-    Mousetrap.bind('d', client.controlEvent({ event: 'player.move', power: 0 }), 'keyup');  
+    Mousetrap.bind('w', updateMovement('up', true), 'keydown');
+    Mousetrap.bind('w', updateMovement('up', false), 'keyup');
+    Mousetrap.bind('s', updateMovement('down', true), 'keydown');
+    Mousetrap.bind('s', updateMovement('down', false), 'keyup');
+    Mousetrap.bind('a', updateMovement('left', true), 'keydown');
+    Mousetrap.bind('a', updateMovement('left', false), 'keyup');
+    Mousetrap.bind('d', updateMovement('right', true), 'keydown');
+    Mousetrap.bind('d', updateMovement('right', false), 'keyup');
 
     // Rotation
     Mousetrap.bind('left', client.controlEvent({ event: 'player.rotate', direction: 'left', power: 1 }), 'keydown');
@@ -155,6 +208,10 @@ function GameClient(path) {
           player.entityID = action.entity.id;
           action.entity.player = player;
         }
+        break;
+      }
+      case 'pong': {
+        client.handlePingResponse();
         break;
       }
       case 'game.start': {
