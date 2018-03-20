@@ -46,9 +46,11 @@ function Player(socket, game) {
   }
 
   player.handleMessage = function(message) {
-    // This method handles all websocket messages from the user
-    console.log('player received message', message);
     switch (message.event) {
+      case 'ping': {
+        player.sendMessage({ event: 'pong' });
+        return true;
+      }
       case 'player.move': {
         let angle;
         if (message.direction === 'up') {

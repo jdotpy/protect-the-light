@@ -253,6 +253,17 @@ function Renderer(viewport, client) {
           }
           ufRenderer(renderer, this.ctx, entity);
         }
+        
+        // Draw status text (framerate and latency info)
+        const textSize = 15;
+        const position = {
+          x: renderer.cameraLocation.x - (renderer.viewportWidth / 2),
+          y: renderer.cameraLocation.y - (renderer.viewportHeight / 2) + 15,
+        };
+        const message = `${client.latency}ms ${renderer.framerate}fps`;
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = `${textSize}px Arial`;
+        this.ctx.fillText(message,position.x,position.y);
       },
     }),
   }
@@ -285,17 +296,13 @@ function Renderer(viewport, client) {
     }
 
     // Keep track of where on the map we are located over
-    renderer.cameraLocation = renderer.translateCoords(location.x, location.y);
-
+    const trackedLocation = renderer.translateCoords(location.x, location.y);
+    renderer.cameraLocation = {
+      x: setBounds(trackedLocation.x, renderer.center.x, renderer.mapDiameter - renderer.center.x),
+      y: setBounds(trackedLocation.y, renderer.center.y, renderer.mapDiameter - renderer.center.y),
+    };
     let leftOffset = -1 * (renderer.cameraLocation.x - (renderer.viewportWidth / 2));
     let topOffset = -1 * (renderer.cameraLocation.y - (renderer.viewportHeight / 2));
-    const leftMin = -1 * (renderer.mapDiameter - renderer.viewportWidth);
-    const topMin = -1 * (renderer.mapDiameter - renderer.viewportHeight);
-    
-
-    // Dont show off-map if we can help it
-    leftOffset = setBounds(leftOffset, leftMin, 0);
-    topOffset = setBounds(topOffset, topMin, 0);
 
     // Now update the canvas locations to show the correct area
     const cssTop = `${topOffset}px`;
@@ -318,7 +325,7 @@ function Renderer(viewport, client) {
   renderer.draw = function() {
     const frameStart = new Date();
     if (renderer.lastFrameStart.getSeconds() !== frameStart.getSeconds()) {
-      console.log(`${renderer.frame} FPS (last frame time: ${renderer.lastFrameTime} ms)`)
+      renderer.framerate = renderer.frame;
       renderer.frame = 0;
     }
     renderer.frame += 1;

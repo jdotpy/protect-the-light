@@ -16,6 +16,9 @@ function GameClient(path) {
 
   client.onServerMessage = function(e) {
     const message = JSON.parse(e.data);
+    if (message.event === 'pong') {
+      client.handlePingResponse();
+    }
     if (message.event === 'state') {
       for (const action of message.updates) {
         client.handleEvent(action);
@@ -32,8 +35,10 @@ function GameClient(path) {
 
   client.onServerConnect = function() {
     client.state.connected = true;
+    
     console.log('Got connected!')
     document.uiState.game.connected = true;
+    setInterval(client.sendPing, 3000);
   }
 
   client.onServerError = function(error) {
@@ -43,6 +48,15 @@ function GameClient(path) {
   client.sendMessage = function(message) {
     console.log('sending message:', message);
     client.socket.send(JSON.stringify(message));
+  }
+
+  client.sendPing = function() {
+    client._lastPingStart = new Date();
+    client.sendMessage({ event: 'ping' })
+  }
+
+  client.handlePingResponse = function() {
+    client.latency = new Date().valueOf() - client._lastPingStart.valueOf();
   }
 
   client.getCurrentPlayer = function() {
@@ -122,7 +136,6 @@ function GameClient(path) {
       console.log('marking UI as stale');
       client.uiStale = true; 
     }
-    console.log(`handling event [${action.event}]`, action);
     switch (action.event) {
       case 'entity.move': {
         const entity = client.state.entities[action.id];
