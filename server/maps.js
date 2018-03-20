@@ -71,9 +71,7 @@ function BasicMap(players) {
   }
 
   map.start = function() {
-    // Spawn Fire Tower
-    map.spawn(Entities.FireTower.new(), 0, 0);
-
+    // Spawn first torch
     map.spawn(Entities.Torch.new({ light: 10 }), 0, 0);
 
     // Spawn players
