@@ -46,11 +46,11 @@ function BasicMap(players) {
         continue
       }
       const collisionDistance = entity.collisionRadius() + mover.collisionRadius();
-      const distanceFromTarget = entity.distanceBetween(target);
+      const distanceFromTarget = entity.distanceTo(target);
 
       if (distanceFromTarget < collisionDistance) {
         // We're colliding, now determine if we are moving away or towards
-        const distanceFromSource = entity.distanceBetween(mover);
+        const distanceFromSource = entity.distanceTo(mover);
         if (distanceFromSource >= distanceFromTarget) {
           // We're moving towards the object
           blocked = true;
@@ -73,6 +73,7 @@ function BasicMap(players) {
   map.start = function() {
     // Spawn Fire Tower
     map.spawn(Entities.FireTower.new(), 0, 0);
+
     map.spawn(Entities.Torch.new({ light: 10 }), 0, 0);
 
     // Spawn players

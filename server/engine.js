@@ -101,7 +101,7 @@ function Game() {
 
     // Schedule next loop
     //setImmediate(game.loop);
-    setTimeout(game.loop, 49);
+    setTimeout(game.loop, 40);
   }
 
   game.sendStateUpdate = function(updates) {

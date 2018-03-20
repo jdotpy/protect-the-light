@@ -71,7 +71,14 @@ function GameClient(path) {
   }
 
   client.controlEvent = function(event) {
-    return () => client.sendMessage(event);
+    return () => {
+      if (event === client._lastControlEvent) {
+        // Throttle duplicate events
+        return false;
+      }
+      client.sendMessage(event); 
+      client._lastControlEvent = event;
+    }
   }
 
   client.bindControls = function() {
