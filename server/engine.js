@@ -1,4 +1,5 @@
 const uuid = require('uuid/v4');
+const config = require('./config');
 const utils = require('./utils');
 const Events = require('./events');
 const Player = require('./players');
@@ -100,8 +101,7 @@ function Game() {
     game.sendStateUpdate();
 
     // Schedule next loop
-    //setImmediate(game.loop);
-    setTimeout(game.loop, 40);
+    setTimeout(game.loop, config.engine.loopInterval);
   }
 
   game.sendStateUpdate = function(updates) {
@@ -122,10 +122,6 @@ function Game() {
     
   }
   return game;
-}
-
-function NPC(game) {
-
 }
 
 function GameEngine() {

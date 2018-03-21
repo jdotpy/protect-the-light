@@ -1,4 +1,5 @@
 const Events = require('./events');
+const Abilities = require('./abilities');
 const uuid = require('uuid/v4');
 
 function degreesToRadians(degrees) {
@@ -15,10 +16,17 @@ const BaseEntity = {
   y: null, // by the actual entity
   size: 1,
   orientation: 0,
+  abilitiesTypes: [],
 
   __init__: function() {
     this.id = uuid();
     this.health = this.hp;
+
+    this.abilities = {};
+    for (const abilityType of this.abilityTypes) {
+      const ability = abilityType.new({ entity: this });
+      this.abilities[ability.name] = ability;
+    }
   },
 
   isDestroyed: function() {
@@ -89,6 +97,7 @@ const Archer = BaseEntity.extend({
   type: 'archer',
   hp: 50,
   speed: 3,
+  abilities: [Abilities.ShootBow],
 });
 
 const EnemyAI = BaseEntity.extend({
@@ -168,6 +177,7 @@ const EnemySkeleton = EnemyAI.extend({
   hp: 10,
   speed: 1,
   attackRange: 0.2,
+  abilityTypes: [Abilities.MeleeAttack],
 });
 
 const FireTower = BaseEntity.extend({
