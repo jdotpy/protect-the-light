@@ -24,6 +24,7 @@ function BasicMap(players) {
     map.players.push(player);
     map.playersByName = utils.keyBy(map.players, 'name');
   }
+
   map.removePlayer = function(player) {
     map.players.remove(player);
     map.playersByName = utils.keyBy(map.players, 'name');
@@ -70,6 +71,10 @@ function BasicMap(players) {
     return collisions;
   }
 
+  map.targetableEntities = function(targeter) {
+    return map.entities.filter((e) => e.team !== targeter.team)
+  }
+
   map.start = function() {
     // Spawn first torch
     map.spawn(Entities.Torch.new({ light: 10 }), 0, 0);
@@ -90,11 +95,13 @@ function BasicMap(players) {
     for (const player of map.players) {
       player.logic(map, loopTime, elapsed);
     }
-    // Logic for all non-player entities
+
     for (const entity of map.entities) {
-      if (entity.playerID) {
-        continue;
+      if (entity.isDestroyed()) {
+        map.stateUpdates.add(Events.entityDestroyed(entity));
+        map.entities.remove(entity);
       }
+      // Run logic
       if (entity.logic) {
         entity.logic(map, loopTime, elapsed);
       }

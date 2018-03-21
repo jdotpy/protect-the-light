@@ -1,3 +1,5 @@
+const Events = require('./events');
+
 const BaseAbility = {
   cooldown: 1000,
   castTime: 0,
@@ -8,7 +10,7 @@ const BaseAbility = {
     this.startTime = null;
     this.lastUsed = 0;
     this.isCasting = false;
-  }
+  },
 
   cancel: function() {
     if (this.isCasting) {
@@ -42,10 +44,6 @@ const BaseAbility = {
     return (timestamp - this.startTime) > this.castTime;
   },
 
-  effect: function(map) {
-    // This should be overridden by each ability type
-  }
-
   use: function(map) {
     const timestamp = new Date().valueOf();
 
@@ -56,8 +54,8 @@ const BaseAbility = {
     }
 
     // Check if we're done casting
-    if (this.isDoneCasting(timestamp)) {
-      this.effect(map);
+    if (this.isDone(timestamp)) {
+      this.apply(map);
       this.isCasting = false;
       this.lastUsed = this.startTime + this.castTime;
       return true;
@@ -65,8 +63,33 @@ const BaseAbility = {
     return false;
   },
 
-  inCone: function(source, degrees, range, target) {
-    
+  inCone: function(source, target, degrees, range, target) {
+    return true;  
+  },
+
+  applyDamage: function(map, target) {
+    const aggro = this.damage * this.aggroFactor;
+    target.takeDamage(this.damage, aggro);
+    map.stateUpdates.add(Events.entityDamaged(target, {
+      entity: target.id,
+      ability: this.name,
+    }));
+  },
+
+  getAllTargets: function(map) {
+    return map.targetableEntities(this.entity);
+  },
+
+  apply: function(map) {
+    for (const target of this.getAllTargets(map)) {
+      if (this.isValidTarget(map, target)) {
+        this.applyDamage(map, target);
+      }
+    }
+  },
+
+  isValidTarget: function(map, target) {
+    // This should be overridden by each ability type
   }
 };
 
@@ -74,18 +97,20 @@ const MeleeAttack = BaseAbility.extend({
   name: 'melee',
   degrees: 120,
   range: 2,
-  effect: function(map) {
-    for (const target of map.entities) {
-      if (this.inCone(this.entity, target)) {
-        target.dealDamage({
-          dealtBy: this.entity,
-          ability: this,
-          damage: this.damage,
-          aggro: this.damage * this.aggroFactor,
-        });
-      }
-    }
+
+  isValidTarget: function(map, target) {
+    return this.inCone(
+      this.entity,
+      target,
+      this.degrees,
+      this.range,
+    );
   },
 });
 
 const ShootBow = BaseAbility.extend({ name: 'shoot-bow' });
+
+module.exports = {
+  ShootBow,
+  MeleeAttack,
+};

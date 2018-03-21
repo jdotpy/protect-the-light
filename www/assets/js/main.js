@@ -185,6 +185,7 @@ function GameClient(path) {
   }
 
   client.handleEvent = function(action) {
+    console.log('Handling Event:', action);
     if (uiUpdateEvents[action.event]) {
       console.log('marking UI as stale');
       client.uiStale = true; 
@@ -199,6 +200,15 @@ function GameClient(path) {
       case 'entity.rotate': {
         const entity = client.state.entities[action.id];
         entity.orientation = action.orientation;
+        break;
+      }
+      case 'entity.damaged': {
+        const entity = client.state.entities[action.id];
+        entity.health = action.health;
+        break;
+      }
+      case 'entity.destroyed': {
+        delete client.state.entities[action.id];
         break;
       }
       case 'entity.spawn': {

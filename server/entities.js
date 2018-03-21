@@ -9,6 +9,10 @@ function radiansToDegrees(radians) {
   return radians / (Math.PI / 180);
 }
 
+const TEAM_BAD = 'bad';
+const TEAM_GOOD = 'good';
+const TEAM_NEUTRAL = 'nuetral';
+
 const BaseEntity = {
   id: null,
   type: null,
@@ -16,7 +20,7 @@ const BaseEntity = {
   y: null, // by the actual entity
   size: 1,
   orientation: 0,
-  abilitiesTypes: [],
+  abilityTypes: [],
 
   __init__: function() {
     this.id = uuid();
@@ -29,8 +33,16 @@ const BaseEntity = {
     }
   },
 
+  takeDamage: function(damage, aggro, source) {
+    this.health = Math.max(this.health - damage, 0);
+  },
+
   isDestroyed: function() {
     return this.health <= 0;
+  },
+
+  isPlayer: function() {
+    return Boolean(this.playerID);
   },
 
   distanceTo: function(target) {
@@ -94,6 +106,7 @@ const BaseEntity = {
 };
 
 const Archer = BaseEntity.extend({
+  team: TEAM_GOOD,
   type: 'archer',
   hp: 50,
   speed: 3,
@@ -101,6 +114,8 @@ const Archer = BaseEntity.extend({
 });
 
 const EnemyAI = BaseEntity.extend({
+  team: TEAM_BAD,
+
   __init__: function __init__() {
     this.super(__init__)();
     this.aggro = {};
@@ -143,6 +158,16 @@ const EnemyAI = BaseEntity.extend({
   },
 
   logic: function(map, loopTime, elapsed) {
+    // If we're using an ability, dont stop it
+    if (this.usingAbility) {
+      const complete = this.usingAbility.use();
+
+      // If we aren't done using this ability, dont do anything till its done
+      if (!complete) {
+        return;
+      }
+    }
+
     // Ensure we have a current target
     if (!this.target || this.target.entity.isDestroyed()) {
       this.findTarget(map);
@@ -151,23 +176,31 @@ const EnemyAI = BaseEntity.extend({
         return;
       }
     }
-    // If we're in range attack or wait
+
+    // If we're in range, attack
     if (this.inAttackRange(this.target.entity)) {
       // attack
-      console.log('waiting');
+      for (const abilityType of this.abilityTypes) {
+        const ability = this.abilities[abilityType.name];
+        if (ability.canUse()) {
+          ability.use(map);
+          break;
+        }
+      }
     }
-    
-    // Else attempt to move into range
-    const moveAngle = this.angleTowards(this.target.entity);
-    const collisions = this.applyVelocity(map, moveAngle, this.speed * elapsed);
-    map.stateUpdates.add(Events.entityMove(this));
+    else {
+      // Else attempt to move into range
+      const moveAngle = this.angleTowards(this.target.entity);
+      const collisions = this.applyVelocity(map, moveAngle, this.speed * elapsed);
+      map.stateUpdates.add(Events.entityMove(this));
 
-    // If we collide we should target the thing we ran into
-    if (collisions.length > 0) {
-      const blocker = collisions[0].entity;
-      const newTarget = { entity: blocker, aggroValue: this.target.aggroValue };
-      this.aggro[blocker.id] = newTarget;
-      this.target = newTarget;
+      // If we collide we should target the thing we ran into
+      if (collisions.length > 0) {
+        const blocker = collisions[0].entity;
+        const newTarget = { entity: blocker, aggroValue: this.target.aggroValue };
+        this.aggro[blocker.id] = newTarget;
+        this.target = newTarget;
+      }
     }
   },
 });
@@ -181,12 +214,14 @@ const EnemySkeleton = EnemyAI.extend({
 });
 
 const FireTower = BaseEntity.extend({
+  team: TEAM_NEUTRAL,
   type: 'fire-tower',
   hp: 100,
   size: 2,
 });
 
 const Torch = BaseEntity.extend({
+  team: TEAM_NEUTRAL,
   type: 'torch',
   hp: 10,
   light: 5,

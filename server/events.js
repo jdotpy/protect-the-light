@@ -49,6 +49,25 @@ const EVENTS = {
     },
   }),
 
+  entityDamaged: (entity, source) => ({
+    event: 'entity.damaged',
+    id: entity.id,
+    health: entity.health,
+    source,
+  }),
+
+  entityHealed: (entity, source) => ({
+    event: 'entity.healed',
+    id: entity.id,
+    health: entity.health,
+    source,
+  }),
+
+  entityDestroyed: (entity) => ({
+    event: 'entity.destroyed',
+    id: entity.id,
+  }),
+
   entityRotate: (entity) => ({
     event: 'entity.rotate',
     id: entity.id,
