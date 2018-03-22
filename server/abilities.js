@@ -65,7 +65,6 @@ const BaseAbility = {
   },
 
   inCone: function(source, target, direction, angle, range) {
-    console.log(`inCone?: [${source.orientation}]${source.x}-${source.y}, ${target.x}${target.y}, in: ${direction}, ${angle}, ${range}`)
     const sourceDirection = source.orientation
     const distance = source.distanceTo(target);
     const angleToTarget = source.angleTowards(target);
@@ -95,6 +94,7 @@ const BaseAbility = {
   },
 
   apply: function(map) {
+    map.stateUpdates.add(Events.entityAbility(this.entity, this));
     for (const target of this.getAllTargets(map)) {
       if (this.isValidTarget(map, target)) {
         this.applyDamage(map, target);

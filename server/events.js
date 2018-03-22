@@ -74,6 +74,12 @@ const EVENTS = {
     orientation: entity.orientation,
   }),
 
+  entityAbility: (entity, ability) => ({
+    event: 'entity.ability',
+    id: entity.id,
+    ability: ability.name,
+  }),
+
 };
 
 module.exports = EVENTS;
