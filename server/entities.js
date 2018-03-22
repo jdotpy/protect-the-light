@@ -1,5 +1,6 @@
 const Events = require('./events');
 const Abilities = require('./abilities');
+const utils = require('./utils');
 const uuid = require('uuid/v4');
 
 function degreesToRadians(degrees) {
@@ -58,7 +59,7 @@ const BaseEntity = {
     const dy = target.y - this.y;
     const radians = Math.atan2(dy, dx);
     const degrees = radiansToDegrees(radians);
-    return degrees;
+    return utils.normalizeAngle(degrees);
   },
 
   applyVelocity: function(map, angle, speed) {
@@ -191,6 +192,10 @@ const EnemyAI = BaseEntity.extend({
     else {
       // Else attempt to move into range
       const moveAngle = this.angleTowards(this.target.entity);
+      if (moveAngle !== this.orientation) {
+        this.orientation = moveAngle;
+        map.stateUpdates.add(Events.entityRotate(this));
+      }
       const collisions = this.applyVelocity(map, moveAngle, this.speed * elapsed);
       map.stateUpdates.add(Events.entityMove(this));
 

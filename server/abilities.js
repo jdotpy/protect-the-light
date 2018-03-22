@@ -1,4 +1,5 @@
 const Events = require('./events');
+const utils = require('./utils');
 
 const BaseAbility = {
   cooldown: 1000,
@@ -63,8 +64,21 @@ const BaseAbility = {
     return false;
   },
 
-  inCone: function(source, target, degrees, range, target) {
-    return true;  
+  inCone: function(source, target, direction, angle, range) {
+    console.log(`inCone?: [${source.orientation}]${source.x}-${source.y}, ${target.x}${target.y}, in: ${direction}, ${angle}, ${range}`)
+    const sourceDirection = source.orientation
+    const distance = source.distanceTo(target);
+    const angleToTarget = source.angleTowards(target);
+
+    const coneStartAngle = direction - (angle / 2);
+    const coneEndAngle = direction + (angle / 2);
+    const inConeAngle = utils.angleBetween(angleToTarget, coneStartAngle, coneEndAngle)
+
+
+    if (distance <= range && inConeAngle) {
+      return true;
+    }
+    return false;
   },
 
   applyDamage: function(map, target) {
@@ -95,14 +109,15 @@ const BaseAbility = {
 
 const MeleeAttack = BaseAbility.extend({
   name: 'melee',
-  degrees: 120,
+  coneSize: 120,
   range: 2,
 
   isValidTarget: function(map, target) {
     return this.inCone(
       this.entity,
       target,
-      this.degrees,
+      this.entity.orientation,
+      this.coneSize,
       this.range,
     );
   },

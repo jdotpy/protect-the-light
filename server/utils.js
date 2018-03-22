@@ -40,8 +40,24 @@ function Queue() {
   return queue;
 }
 
+function normalizeAngle(angle) {
+  return (360 + angle) % 360;
+}
+
+function angleBetween(angle, start, end) {
+  // If we are covering an angle span that wraps around (e.g. 350-10)
+  start = normalizeAngle(start);
+  end = normalizeAngle(end);
+  if (end < start) {
+    return angle <= end || angle >= start;
+  }
+  return angle >= start && angle <= end;
+}
+
 module.exports = {
   preciseTime,
+  normalizeAngle,
+  angleBetween,
   keyBy,
   Queue,
 };
