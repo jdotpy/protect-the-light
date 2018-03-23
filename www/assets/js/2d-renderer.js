@@ -83,14 +83,17 @@ const RENDERERS = {
     const location = renderer.translateCoords(entity.x, entity.y);
     const size = entity.size * renderer.SCALE_FACTOR;
     let radius = Math.floor(size / 2);
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = '#68574a';
-    ctx.strokeRect(location.x - radius, location.y - radius, radius * 2, radius * 2);
-    radius = Math.floor(size * 0.25);
-    ctx.strokeRect(location.x - radius, location.y - radius, radius * 2, radius * 2);
-    radius = Math.floor(size * 0.125);
-    ctx.strokeRect(location.x - radius, location.y - radius, radius * 2, radius * 2);
-    ctx.stroke();
+    const flameRadius = Math.floor(radius * 0.75);
+    const image = renderer.getImageAsset('img_object_stone_circle');
+    ctx.drawImage(image, location.x - radius, location.y - radius, size, size);
+    const flame = getCachedRadialImage(flameRadius, {
+      stops: [
+        { offset: 0, color: [244, 206, 6], alpha: 1},
+        { offset: .4, color: [169, 87, 0], alpha: 1},
+        { offset: 1, color: [169, 87, 0], alpha: 0},
+      ],
+    });
+    ctx.drawImage(flame, location.x - flameRadius, location.y - flameRadius);
   },
   'torch': (renderer, ctx, entity) => {
     const location = renderer.translateCoords(entity.x, entity.y);
@@ -209,7 +212,7 @@ function Renderer(viewport, client) {
         this.clear();
         
         this.ctx.save()
-        const lamps = values(state.entities).filter((e) => e.type === 'torch');
+        const lamps = values(state.entities).filter((e) => Boolean(e.light));
         for (const lamp of lamps) {
           const pos = renderer.translateCoords(lamp.x, lamp.y);
           const radius = lamp.light * renderer.SCALE_FACTOR;

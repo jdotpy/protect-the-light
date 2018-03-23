@@ -6,6 +6,8 @@ const BaseAbility = {
   castTime: 0,
   aggroFactor: 1,
   damage: 1,
+
+  meleeAngle: 120,
   
   __init__: function() {
     this.startTime = null;
@@ -64,20 +66,16 @@ const BaseAbility = {
     return false;
   },
 
-  inCone: function(source, target, direction, angle, range) {
+  inMeleeCone: function(source, target, direction, range) {
     const sourceDirection = source.orientation
     const distance = source.distanceTo(target);
     const angleToTarget = source.angleTowards(target);
-
-    const coneStartAngle = direction - (angle / 2);
-    const coneEndAngle = direction + (angle / 2);
+    const coneStartAngle = direction - (this.meleeAngle / 2);
+    const coneEndAngle = direction + (this.meleeAngle / 2);
     const inConeAngle = utils.angleBetween(angleToTarget, coneStartAngle, coneEndAngle)
 
-
-    if (distance <= range && inConeAngle) {
-      return true;
-    }
-    return false;
+    const inRange = (distance - target.collisionRadius()) <= range;
+    return inRange && inConeAngle;
   },
 
   applyDamage: function(map, target) {
@@ -113,11 +111,10 @@ const MeleeAttack = BaseAbility.extend({
   range: 2,
 
   isValidTarget: function(map, target) {
-    return this.inCone(
+    return this.inMeleeCone(
       this.entity,
       target,
       this.entity.orientation,
-      this.coneSize,
       this.range,
     );
   },

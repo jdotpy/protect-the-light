@@ -144,7 +144,7 @@ const EnemyAI = BaseEntity.extend({
       return this.target;
     }
     // Otherwise look for new torches to destroy
-    const torches = map.entities.filter((e) => e.type === 'torch');
+    const torches = map.entities.filter((e) => e.team === TEAM_NEUTRAL);
     for (const torch of torches) {
       this.aggro[torch.id] = { aggroValue: 1, entity: torch };
     }
@@ -221,8 +221,9 @@ const EnemySkeleton = EnemyAI.extend({
 const FireTower = BaseEntity.extend({
   team: TEAM_NEUTRAL,
   type: 'fire-tower',
+  light: 10,
   hp: 100,
-  size: 2,
+  size: 3,
 });
 
 const Torch = BaseEntity.extend({
