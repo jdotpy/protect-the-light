@@ -222,7 +222,7 @@ const FireTower = BaseEntity.extend({
   team: TEAM_NEUTRAL,
   type: 'fire-tower',
   light: 10,
-  hp: 100,
+  hp: 30,
   size: 3,
 });
 

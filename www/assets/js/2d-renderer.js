@@ -69,23 +69,20 @@ const getCachedRadialImage = cacher(function(radius, options) {
 })
 
 const RENDERERS = {
-  'archer': (renderer, ctx, entity) => {
+  'archer': (renderer, ctx, entity, location) => {
     // We'll eventually want orientation:
-    //  ctx.rotate(45 * Math.PI / 180);
-    //  ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const location = renderer.translateCoords(entity.x, entity.y);
     const size = entity.size * renderer.SCALE_FACTOR;
     const radius = Math.floor(size / 2);
     ctx.fillStyle = '#000';
-    ctx.fillRect(location.x - radius, location.y - radius, size, size);
+    //ctx.fillRect(location.x - radius, location.y - radius, size, size);
+    ctx.fillRect(-1 * radius, -1 * radius, size, size);
   },
-  'fire-tower': (renderer, ctx, entity) => {
-    const location = renderer.translateCoords(entity.x, entity.y);
+  'fire-tower': (renderer, ctx, entity, location) => {
     const size = entity.size * renderer.SCALE_FACTOR;
     let radius = Math.floor(size / 2);
     const flameRadius = Math.floor(radius * 0.75);
     const image = renderer.getImageAsset('img_object_stone_circle');
-    ctx.drawImage(image, location.x - radius, location.y - radius, size, size);
+    ctx.drawImage(image, -1 * radius, -1 * radius, size, size);
     const flame = getCachedRadialImage(flameRadius, {
       stops: [
         { offset: 0, color: [244, 206, 6], alpha: 1},
@@ -93,10 +90,9 @@ const RENDERERS = {
         { offset: 1, color: [169, 87, 0], alpha: 0},
       ],
     });
-    ctx.drawImage(flame, location.x - flameRadius, location.y - flameRadius);
+    ctx.drawImage(flame, -1 * flameRadius, -1 * flameRadius);
   },
-  'torch': (renderer, ctx, entity) => {
-    const location = renderer.translateCoords(entity.x, entity.y);
+  'torch': (renderer, ctx, entity, location) => {
     const size = entity.size * renderer.SCALE_FACTOR;
     const radius = Math.floor(size / 2);
     const flame = getCachedRadialImage(radius, {
@@ -106,18 +102,16 @@ const RENDERERS = {
         { offset: 1, color: [169, 87, 0], alpha: 0},
       ],
     });
-    ctx.drawImage(flame, location.x - radius, location.y - radius);
+    ctx.drawImage(flame, -1 * radius, -1 * radius);
   },
-  'skele': (renderer, ctx, entity) => {
-    const location = renderer.translateCoords(entity.x, entity.y);
+  'skele': (renderer, ctx, entity, location) => {
     const size = entity.size * renderer.SCALE_FACTOR;
     const radius = Math.floor(size / 2);
     ctx.fillStyle = '#eee';
-    ctx.fillRect(location.x - radius, location.y - radius, size, size);
+    ctx.fillRect(-1 * radius, -1 * radius, size, size);
   },
-  'unitFrame': (renderer, ctx, entity) => {
+  'unitFrame': (renderer, ctx, entity, location) => {
     const barHeight = 10;
-    const location = renderer.translateCoords(entity.x, entity.y);
     const size = entity.size * renderer.SCALE_FACTOR;
 
     // We want the bottom left corner of the entity
@@ -201,7 +195,13 @@ function Renderer(viewport, client) {
         this.clear();
         for (const entity of values(state.entities)) {
           const er = RENDERERS[entity.type];
-          er(renderer, this.ctx, entity);
+          const location = renderer.translateCoords(entity.x, entity.y);
+          this.ctx.translate(location.x, location.y);
+          if (entity.orientation) {
+            this.ctx.rotate((360 - entity.orientation) * Math.PI / 180);
+          }
+          er(renderer, this.ctx, entity, location);
+          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
       },
     }),
@@ -254,7 +254,8 @@ function Renderer(viewport, client) {
           if (!entity.health) {
             continue
           }
-          ufRenderer(renderer, this.ctx, entity);
+          const location = renderer.translateCoords(entity.x, entity.y);
+          ufRenderer(renderer, this.ctx, entity, location);
         }
         
         // Draw status text (framerate and latency info)
