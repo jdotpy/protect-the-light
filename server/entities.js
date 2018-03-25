@@ -21,6 +21,7 @@ const BaseEntity = {
   y: null, // by the actual entity
   size: 1,
   orientation: 0,
+  collision: true,
   abilityTypes: [],
 
   __init__: function() {
@@ -110,8 +111,16 @@ const Archer = BaseEntity.extend({
   team: TEAM_GOOD,
   type: 'archer',
   hp: 50,
-  speed: 3,
+  speed: 3.1,
   abilities: [Abilities.ShootBow],
+});
+
+const Knight = BaseEntity.extend({
+  team: TEAM_GOOD,
+  type: 'knight',
+  hp: 100,
+  speed: 2.9,
+  abilityTypes: [Abilities.MeleeAttack],
 });
 
 const EnemyAI = BaseEntity.extend({
@@ -235,6 +244,7 @@ const Torch = BaseEntity.extend({
 
 const PLAYER_ROLES = {
   archer: Archer,
+  knight: Knight,
 }
 
 module.exports = {

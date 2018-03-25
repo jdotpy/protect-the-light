@@ -14,6 +14,7 @@ function Game() {
     players: [],
     stateUpdates: utils.Queue(),
     loopCount: 0,
+    loopTime: 0,
     status: null,
   };
 
@@ -91,7 +92,9 @@ function Game() {
     const loopTime = utils.preciseTime();
     const elapsed = loopTime - game.lastLoopTime;
     if (Math.round(loopTime) > Math.round(game.lastLoopTime)) {
-      console.log(`Loop rate: ${game.loopCount} loops/second`);
+      const avgTime = game.loopTime / game.loopCount;
+      console.log(`Loop rate: ${game.loopCount} loops/second. Loop time: ${avgTime}`);
+      game.loopTime = 0;
       game.loopCount = 0;
     }
     game.lastLoopTime = loopTime;
@@ -100,6 +103,8 @@ function Game() {
     game.logic(loopTime, elapsed);
     game.sendStateUpdate();
 
+    const loopDuration = utils.preciseTime() - loopTime;
+    game.loopTime += loopDuration;
     // Schedule next loop
     setTimeout(game.loop, config.engine.loopInterval);
   }

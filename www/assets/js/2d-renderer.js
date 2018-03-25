@@ -70,12 +70,17 @@ const getCachedRadialImage = cacher(function(radius, options) {
 
 const RENDERERS = {
   'archer': (renderer, ctx, entity, location) => {
+    const size = entity.size * renderer.SCALE_FACTOR;
+    const radius = Math.floor(size / 2);
+    const image = renderer.getImageAsset('img_entity_archer');
+    ctx.drawImage(image, -100, -100, 200, 200);
+  },
+  'knight': (renderer, ctx, entity, location) => {
     // We'll eventually want orientation:
     const size = entity.size * renderer.SCALE_FACTOR;
     const radius = Math.floor(size / 2);
-    ctx.fillStyle = '#000';
-    //ctx.fillRect(location.x - radius, location.y - radius, size, size);
-    ctx.fillRect(-1 * radius, -1 * radius, size, size);
+    const image = renderer.getImageAsset('img_entity_knight');
+    ctx.drawImage(image, -100, -100, 200, 200);
   },
   'fire-tower': (renderer, ctx, entity, location) => {
     const size = entity.size * renderer.SCALE_FACTOR;

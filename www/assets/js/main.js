@@ -140,15 +140,10 @@ function GameClient(path) {
       const playerEntity = client.getCurrentPlayerEntity();
       const playerPos = client.renderer.translateCoords(playerEntity.x, playerEntity.y);
 
-      console.log('Player pos:', playerPos);
-      console.log('Mouse pos:', mousePos);
-
-      // Subtract 
+      // Subtract the screen offset to get the player position relative to screen;
       const dx = mousePos.x - (playerPos.x + client.renderer.offset.x);
       const dy = mousePos.y - (playerPos.y + client.renderer.offset.y);
-      console.log('dx:', dx, 'dy:', dy);
       const angle = getDegreeOfAngle(dx, dy * -1); // Reverse y-axis
-      console.log('angle:', angle);
 
       // Update locally for fast-update
       playerEntity.orientation = angle;

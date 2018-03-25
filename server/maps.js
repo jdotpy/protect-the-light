@@ -41,7 +41,7 @@ function BasicMap(players) {
     const collisions = [];
     let blocked = false;
 
-    for (const entity of map.entities) {
+    for (const entity of map.entities.filter((e) => e.collision)) {
       // Dont collide with yourself
       if (entity === mover) {
         continue
