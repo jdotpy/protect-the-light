@@ -193,7 +193,10 @@ const EnemyAI = BaseEntity.extend({
       for (const abilityType of this.abilityTypes) {
         const ability = this.abilities[abilityType.name];
         if (ability.canUse()) {
-          ability.use(map);
+          const completed = ability.use(map);
+          if (!completed) {
+            this.usingAbility = ability;
+          }
           break;
         }
       }

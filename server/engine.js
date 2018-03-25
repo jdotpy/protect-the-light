@@ -63,13 +63,16 @@ function Game() {
   game.logic = function(loopTime, elapsed) {
     /* Before the game starts during name and role-picking */
     if (game.status === 'init') {
+      for (const player of game.players) {
+        player.logic(null, loopTime, elapsed);
+      }
       const hasUnreadyPlayers = game.players.some((player) => !player.ready);
       if (hasUnreadyPlayers || game.players.length < 1) {
         return false;
       }
       game.startPlaying();
     }
-    
+
     /* During the actual action */
     else if (game.status === 'playing') {
       const mapUpdates = game.map.logic(loopTime, elapsed);
@@ -148,7 +151,7 @@ function GameEngine() {
       return false;
     }
 
-    const player = Player(ctx.websocket, game);
+    const player = Player.new({ socket: ctx.websocket, game });
     game.addPlayer(player);
     
     // Make it easy to access the player on future messages
@@ -156,7 +159,7 @@ function GameEngine() {
   }
 
   engine.onMessage = function(ctx, message) {
-    ctx.player.handleMessage(message);
+    ctx.player.commands.add(message);
   }
   
   return engine;

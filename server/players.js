@@ -1,5 +1,6 @@
 const Entities = require('./entities');
 const Events = require('./events');
+const utils = require('./utils');
 const uuid = require('uuid/v4');
 
 function errorMessage(message) {
@@ -9,46 +10,49 @@ function errorMessage(message) {
   };  
 }
 
-function Player(socket, game) {
-  const player = {
-    id: uuid(),
-    game: game,
-    character: null,
-    role: null,
-    name: null,
-    ready: false,
-    rotation: {},
-    movement: {},
-  };
+const Player = {
+  character: null,
+  role: null,
+  name: null,
+  ready: false,
 
-  player.sendMessage = function(message) {
+  __init__: function() {
+    this.id =  uuid();
+    this.commands = utils.Queue();
+    this.sendMessage({
+      event: 'init.you',
+      player: this.stateDetails(),
+    });
+    this.movement = {};
+  },
+
+  sendMessage: function(message) {
     if (typeof message !== 'string') {
       message = JSON.stringify(message);
     }
     try {
-      socket.send(message);
+      this.socket.send(message);
     }
     catch (error) {
       console.error('Errored while trying to send message to client');
       console.log(error);
-      console.log(`[${player.name}] Player disconnected!`);
-      player.game.removePlayer(player);
+      console.log(`[${this.name}] Player disconnected!`);
+      this.game.removePlayer(this);
     }
-  }
+  },
 
-  player.stateDetails = function() {
+  stateDetails: function() {
     return {
-      id: player.id,
-      name: player.name,
-      role: player.role,
-      ready: player.ready,
+      id: this.id,
+      name: this.name,
+      role: this.role,
+      ready: this.ready,
     }
-  }
-
-  player.handleMessage = function(message) {
+  },
+  handleMessage: function(message) {
     switch (message.event) {
       case 'ping': {
-        player.sendMessage({ event: 'pong' });
+        this.sendMessage({ event: 'pong' });
         return true;
       }
       case 'player.move': {
@@ -69,79 +73,100 @@ function Player(socket, game) {
           angle = message.direction || 0;
           angle = angle % 360;
         }
-        player.movement = { angle, power: message.power || 0 };
+        this.movement = { angle, power: message.power || 0 };
         return true;
       }
       case 'player.orientation': {
         let angle = message.direction;
         if (typeof angle !== 'number') {
-          player.sendMessage(errorMessage(`Invalid orientation.direction: ${message.direction}`));
+          this.sendMessage(errorMessage(`Invalid orientation.direction: ${message.direction}`));
           return false;
         }
-        player.rotate = angle;
-        player.character.orientation = angle;
+        this.rotate = angle;
+        this.character.orientation = angle;
+        return true;
+      }
+      case 'player.useAbility': {
+        let abilityCommand = message.ability;
+        // Determine which ability is to be used by index or name
+        let ability = null;
+        if (typeof abilityCommand === 'number') {
+          const type = this.character.abilityTypes[abilityCommand];
+          if (type) {
+            ability = this.character.abilities[type.name];
+          }
+        }
+        else {
+          ability = this.character.abilities[abilityCommand];
+        }
+        if (!ability) {
+          this.sendMessage(errorMessage(`Invalid ability: ${abilityCommand}`));
+          return false;
+        }
+
+        if (this.character.usingAbility) {
+          this.character.usingAbility.cancel();
+          this.character.usingAbility = null;
+        }
+        const completed = ability.use(this.game.map);
+        if (!completed) {
+          this.character.usingAbility = ability;
+        }
         return true;
       }
       case 'init.chooseName': {
-        player.name = message.name.slice(0, MAX_NAME_LENGTH);
-        game.playerUpdated(player);
+        this.name = message.name.slice(0, MAX_NAME_LENGTH);
+        this.game.playerUpdated(this);
         return true;
       }
       case 'init.chooseRole': {
         const requestedRole = message.role;
         const roleClass = Entities.PLAYER_ROLES[requestedRole];
         if (!roleClass) {
-          player.sendMessage(errorMessage(`Invalid role: ${requestedRole}`));
+          this.sendMessage(errorMessage(`Invalid role: ${requestedRole}`));
           return false;
         }
-        player.role = requestedRole;
-        game.playerUpdated(player);
+        this.role = requestedRole;
+        this.game.playerUpdated(this);
         return true;
       }
       case 'init.ready': {
-        if (!player.role || !player.name) {
-          player.sendMessage(errorMessage(
+        if (!this.role || !this.name) {
+          this.sendMessage(errorMessage(
             "You're not ready until you choose your name and role",
           ));
           return false;
         }
-        player.ready = true;
-        game.playerUpdated(player);
+        this.ready = true;
+        this.game.playerUpdated(this);
         return true;
       }
       default: {
-        player.sendMessage(errorMessage('Unrecognized message event'));
+        this.sendMessage(errorMessage('Unrecognized message event'));
         return false;
       }
     }
-  }
-
-  player.logic = function(map, loopTime, elapsed) {
-    if (player.movement.power) {
-      player.character.applyVelocity(
-        map,
-        player.movement.angle,
-        player.movement.power * player.character.speed * elapsed,
-      );
-      map.stateUpdates.add(Events.entityMove(player.character));
-    }
-    if (player.rotate) {
-      map.stateUpdates.add(Events.entityRotate(player.character));
-      player.rotate = null;
+  },
+  logic: function(map, loopTime, elapsed) {
+    for (const command of this.commands.drain()) {
+      this.handleMessage(command);
     }
 
-    return [];
-  }
-
-  player.init = function() {
-    player.sendMessage({
-      event: 'init.you',
-      player: player.stateDetails(),
-    });
-  }
-
-  player.init();
-  return player;
+    if (this.character) {
+      if (this.movement.power) {
+        this.character.applyVelocity(
+          map,
+          this.movement.angle,
+          this.movement.power * this.character.speed * elapsed,
+        );
+        map.stateUpdates.add(Events.entityMove(this.character));
+      }
+      if (this.rotate) {
+        map.stateUpdates.add(Events.entityRotate(this.character));
+        this.rotate = null;
+      }
+    }
+  },
 }
 
 module.exports = Player;

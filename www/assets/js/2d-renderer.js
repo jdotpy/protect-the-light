@@ -361,4 +361,3 @@ function Renderer(viewport, client) {
   }
   return renderer;
 }
-
