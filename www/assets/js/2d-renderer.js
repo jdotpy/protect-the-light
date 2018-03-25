@@ -112,8 +112,8 @@ const RENDERERS = {
   'skele': (renderer, ctx, entity, location) => {
     const size = entity.size * renderer.SCALE_FACTOR;
     const radius = Math.floor(size / 2);
-    ctx.fillStyle = '#eee';
-    ctx.fillRect(-1 * radius, -1 * radius, size, size);
+    const image = renderer.getImageAsset('img_entity_skele');
+    ctx.drawImage(image, -100, -100, 200, 200);
   },
   'unitFrame': (renderer, ctx, entity, location) => {
     const barHeight = 10;
