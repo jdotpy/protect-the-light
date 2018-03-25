@@ -87,7 +87,7 @@ function BasicMap(players) {
     }
 
     // Spawn enemies
-    map.spawn(Entities.EnemySkeleton.new(), 0, 5);
+    //map.spawn(Entities.EnemySkeleton.new(), 0, 5);
   }
 
   map.logic = function(loopTime, elapsed) {

@@ -72,15 +72,14 @@ function Player(socket, game) {
         player.movement = { angle, power: message.power || 0 };
         return true;
       }
-      case 'player.rotate': {
-        let angle;
-        if (message.direction === 'right') {
-          angle = -20;
+      case 'player.orientation': {
+        let angle = message.direction;
+        if (typeof angle !== 'number') {
+          player.sendMessage(errorMessage(`Invalid orientation.direction: ${message.direction}`));
+          return false;
         }
-        else {
-          angle = 20;
-        }
-        player.rotation = { angle, power: message.power || 0 };
+        player.rotate = angle;
+        player.character.orientation = angle;
         return true;
       }
       case 'init.chooseName': {
@@ -126,13 +125,9 @@ function Player(socket, game) {
       );
       map.stateUpdates.add(Events.entityMove(player.character));
     }
-    if (player.rotation.power) {
-      let rotationValue = player.rotation.power * player.rotation.angle * elapsed;
-      if (player.rotation.direction === 'right') {
-        rotationValue = rotationValue * -1;
-      }
-      player.character.applyRotation(rotationValue);
+    if (player.rotate) {
       map.stateUpdates.add(Events.entityRotate(player.character));
+      player.rotate = null;
     }
 
     return [];

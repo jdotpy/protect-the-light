@@ -86,19 +86,6 @@ function GameClient(path) {
     client.sendMessage({ event: 'init.chooseRole', role });
   }
 
-  client.sen
-
-  client.controlEvent = function(event) {
-    return () => {
-      if (event === client._lastControlEvent) {
-        // Throttle duplicate events
-        return false;
-      }
-      client.sendMessage(event); 
-      client._lastControlEvent = event;
-    }
-  }
-
   client.bindControls = function() {
     const movementControls = { up: 0,};
 
@@ -149,6 +136,36 @@ function GameClient(path) {
       }
     };
 
+    function updateOrientation(mousePos) {
+      const playerEntity = client.getCurrentPlayerEntity();
+      const playerPos = client.renderer.translateCoords(playerEntity.x, playerEntity.y);
+
+      console.log('Player pos:', playerPos);
+      console.log('Mouse pos:', mousePos);
+
+      // Subtract 
+      const dx = mousePos.x - (playerPos.x + client.renderer.offset.x);
+      const dy = mousePos.y - (playerPos.y + client.renderer.offset.y);
+      console.log('dx:', dx, 'dy:', dy);
+      const angle = getDegreeOfAngle(dx, dy * -1); // Reverse y-axis
+      console.log('angle:', angle);
+
+      // Update locally for fast-update
+      playerEntity.orientation = angle;
+      client.sendMessage({
+        event: 'player.orientation',
+        direction: angle,
+      });
+    }
+
+    function onMouseEvent(e) {
+      console.log(e);
+      if (e.buttons === 1) { // Primary button
+        const position = { x: e.pageX, y: e.pageY };
+        updateOrientation(position);
+      }
+    }
+
     // compass movement
     Mousetrap.bind('w', updateMovement('up', true), 'keydown');
     Mousetrap.bind('w', updateMovement('up', false), 'keyup');
@@ -159,11 +176,9 @@ function GameClient(path) {
     Mousetrap.bind('d', updateMovement('right', true), 'keydown');
     Mousetrap.bind('d', updateMovement('right', false), 'keyup');
 
-    // Rotation
-    Mousetrap.bind('left', client.controlEvent({ event: 'player.rotate', direction: 'left', power: 1 }), 'keydown');
-    Mousetrap.bind('left', client.controlEvent({ event: 'player.rotate', power: 0 }), 'keyup');
-    Mousetrap.bind('right', client.controlEvent({ event: 'player.rotate', direction: 'right', power: 1 }), 'keydown');
-    Mousetrap.bind('right', client.controlEvent({ event: 'player.rotate', power: 0 }), 'keyup');
+    // Orientation using the mouse
+    document.onmousedown = onMouseEvent;
+    //document.onmousemove = onMouseEvent;
 
     //// Abilities
     //Mousetrap.bind('.', client.controlEvent({ event: 'player.move', direction: '' });

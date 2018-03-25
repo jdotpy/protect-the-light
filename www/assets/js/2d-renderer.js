@@ -305,12 +305,14 @@ function Renderer(viewport, client) {
       x: setBounds(trackedLocation.x, renderer.center.x, renderer.mapDiameter - renderer.center.x),
       y: setBounds(trackedLocation.y, renderer.center.y, renderer.mapDiameter - renderer.center.y),
     };
-    let leftOffset = -1 * (renderer.cameraLocation.x - (renderer.viewportWidth / 2));
-    let topOffset = -1 * (renderer.cameraLocation.y - (renderer.viewportHeight / 2));
+    renderer.offset = {
+      x: -1 * (renderer.cameraLocation.x - (renderer.viewportWidth / 2)),
+      y: -1 * (renderer.cameraLocation.y - (renderer.viewportHeight / 2)),
+    };
 
     // Now update the canvas locations to show the correct area
-    const cssTop = `${topOffset}px`;
-    const cssLeft = `${leftOffset}px`;
+    const cssTop = `${renderer.offset.y}px`;
+    const cssLeft = `${renderer.offset.x}px`;
     for (const layer of values(renderer.layers)) {
       layer.canvas.style.top = cssTop;
       layer.canvas.style.left = cssLeft;
