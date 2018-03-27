@@ -10,6 +10,13 @@ function radiansToDegrees(radians) {
   return radians / (Math.PI / 180);
 }
 
+function getVector(x, y, angle, distance) {
+  const radians = degreesToRadians(angle);
+  const vy = Math.sin(radians) * distance;
+  const vx = Math.cos(radians) * distance;
+  return { x: x + vx, y: y + vy };
+}
+
 const TEAM_BAD = 'bad';
 const TEAM_GOOD = 'good';
 const TEAM_NEUTRAL = 'nuetral';
@@ -26,7 +33,9 @@ const BaseEntity = {
 
   __init__: function() {
     this.id = uuid();
-    this.health = this.hp;
+    if (this.hp) {
+      this.health = this.hp;
+    }
 
     this.abilities = {};
     for (const abilityType of this.abilityTypes) {
@@ -35,8 +44,14 @@ const BaseEntity = {
     }
   },
 
+  collide: function() {
+
+  },
+
   takeDamage: function(damage, aggro, source) {
-    this.health = Math.max(this.health - damage, 0);
+    if (this.health) {
+      this.health = Math.max(this.health - damage, 0);
+    }
   },
 
   isDestroyed: function() {
@@ -63,12 +78,12 @@ const BaseEntity = {
     return utils.normalizeAngle(degrees);
   },
 
-  applyVelocity: function(map, angle, speed) {
-    const radians = degreesToRadians(angle);
-    const vy = Math.sin(radians) * speed;
-    const vx = Math.cos(radians) * speed;
+  getVectorFromMe: function(distance) {
+    return getVector(this.x, this.y, this.orientation, distance)
+  },
 
-    const target = { x: this.x + vx, y: this.y + vy };
+  applyVelocity: function(map, angle, distance) {
+    const target = getVector(this.x, this.y, angle, distance)
     const collisions = map.moveEntity(this, target);
     return collisions;
   },
@@ -112,7 +127,7 @@ const Archer = BaseEntity.extend({
   type: 'archer',
   hp: 50,
   speed: 3.1,
-  abilities: [Abilities.ShootBow],
+  abilityTypes: [Abilities.ShootBow],
 });
 
 const Knight = BaseEntity.extend({
@@ -211,13 +226,16 @@ const EnemyAI = BaseEntity.extend({
       const collisions = this.applyVelocity(map, moveAngle, this.speed * elapsed);
       map.stateUpdates.add(Events.entityMove(this));
 
-      // If we collide we should target the thing we ran into
-      if (collisions.length > 0) {
-        const blocker = collisions[0].entity;
-        const newTarget = { entity: blocker, aggroValue: this.target.aggroValue };
-        this.aggro[blocker.id] = newTarget;
-        this.target = newTarget;
-      }
+    }
+  },
+
+  collide: function(map, collision) {
+    // If we collide we should target the thing we ran into
+    if (collision.source === this) {
+      const blocker = collision.target;
+      const newTarget = { entity: blocker, aggroValue: this.target.aggroValue };
+      this.aggro[blocker.id] = newTarget;
+      this.target = newTarget;
     }
   },
 });
@@ -245,6 +263,36 @@ const Torch = BaseEntity.extend({
   light: 5,
 })
 
+const Arrow = BaseEntity.extend({
+  type: 'arrow',
+  speed: 8,
+  destroyed: false,
+
+  isDestroyed: function() {
+    return this.destroyed;
+  },
+
+  collide: function(map, collision) {
+    if (this.isDestroyed() || collision.target === this.origin.entity) {
+      return false; 
+    }
+
+    // Remove arrow from play
+    this.destroyed = true;
+    collision.target.takeDamage(this.damage, this.aggro);
+    map.stateUpdates.add(Events.entityDamaged(collision.target, {
+      entity: collision.target.id,
+      ability: this.name,
+    }));
+  },
+
+  logic: function(map, loopTime, elapsed) {
+    // Else attempt to move into range
+    this.applyVelocity(map, this.orientation, this.speed * elapsed);
+    map.stateUpdates.add(Events.entityMove(this));
+  },
+})
+
 const PLAYER_ROLES = {
   archer: Archer,
   knight: Knight,
@@ -256,4 +304,5 @@ module.exports = {
   EnemySkeleton,
   FireTower,
   Torch,
+  Arrow,
 }

@@ -107,7 +107,6 @@ const BaseAbility = {
 
 const MeleeAttack = BaseAbility.extend({
   name: 'melee',
-  coneSize: 120,
   range: 2,
 
   isValidTarget: function(map, target) {
@@ -120,7 +119,27 @@ const MeleeAttack = BaseAbility.extend({
   },
 });
 
-const ShootBow = BaseAbility.extend({ name: 'shoot-bow' });
+const ShootBow = BaseAbility.extend({
+  name: 'shoot-bow',
+  damage: 5,
+
+  __init__: function __init__() {
+    this.Arrow = require('./entities').Arrow;
+  },
+
+  apply: function(map) {
+    const Entities = require('./entities');
+    const location = this.entity.getVectorFromMe(2);
+    map.spawn(this.Arrow.new({
+      damage: this.damage,
+      aggro: this.damage * this.aggroFactor,
+      team: this.entity.team,
+      orientation: this.entity.orientation,
+      origin: this,
+    }), location.x, location.y);
+  },
+
+});
 
 module.exports = {
   ShootBow,

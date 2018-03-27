@@ -97,6 +97,12 @@ const RENDERERS = {
     });
     ctx.drawImage(flame, -1 * flameRadius, -1 * flameRadius);
   },
+  'arrow': (renderer, ctx, entity, location) => {
+    const size = entity.size * renderer.SCALE_FACTOR;
+    const radius = Math.floor(size / 2);
+    const image = renderer.getImageAsset('img_object_arrow');
+    ctx.drawImage(image, -75, -5, 75, 11);
+  },
   'torch': (renderer, ctx, entity, location) => {
     const size = entity.size * renderer.SCALE_FACTOR;
     const radius = Math.floor(size / 2);

@@ -104,6 +104,11 @@ const Player = {
           return false;
         }
 
+        if (!ability.canUse()) {
+          this.sendMessage(errorMessage('Cant use that ability yet'));
+          return false;
+        }
+
         if (this.character.usingAbility) {
           this.character.usingAbility.cancel();
           this.character.usingAbility = null;

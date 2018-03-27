@@ -2,6 +2,17 @@ const utils = require('./utils');
 const Events = require('./events');
 const Entities = require('./entities');
 
+const Collision = {
+  __init__() {
+  },
+  hasMember(entity) {
+    if (this.target === entity || this.source === entity) {
+      return true;
+    }
+    return false;
+  },
+};
+
 function BasicMap(players) {
   const map = {
     name: 'basic',
@@ -52,15 +63,20 @@ function BasicMap(players) {
       if (distanceFromTarget < collisionDistance) {
         // We're colliding, now determine if we are moving away or towards
         const distanceFromSource = entity.distanceTo(mover);
+        let towards;
         if (distanceFromSource >= distanceFromTarget) {
           // We're moving towards the object
           blocked = true;
-          collisions.push({ towards: true, entity });
+          towards = true;
         }
         else {
           // We're moving away from the object, allow movement
-          collisions.push({ towards: false, entity });
+          towards = false;
         }
+        const collision = Collision.new({ towards, source: mover, target: entity });
+        collisions.push(collision)
+        mover.collide(this, collision);
+        entity.collide(this, collision);
       }
     }
     // Now if we didn't get blocked by a collision go ahead with relocation
@@ -96,15 +112,21 @@ function BasicMap(players) {
       player.logic(map, loopTime, elapsed);
     }
 
+    const toRemove = [];
     for (const entity of map.entities) {
       if (entity.isDestroyed()) {
         map.stateUpdates.add(Events.entityDestroyed(entity));
-        map.entities.remove(entity);
+        toRemove.push(entity);
+        continue
       }
       // Run logic
       if (entity.logic) {
         entity.logic(map, loopTime, elapsed);
       }
+    }
+    // Remove marked entities
+    for (const entityToRemove of toRemove) {
+      map.entities.remove(entityToRemove);
     }
     return map.stateUpdates.drain();
   }
