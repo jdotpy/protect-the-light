@@ -3,8 +3,6 @@ const Events = require('./events');
 const Entities = require('./entities');
 
 const Collision = {
-  __init__() {
-  },
   hasMember(entity) {
     if (this.target === entity || this.source === entity) {
       return true;
@@ -13,12 +11,57 @@ const Collision = {
   },
 };
 
+const Spawner = {
+  spawnCount: 1,
+  spawnInterval: 20,
+
+  __init__: function() {
+    this.lastSpawn = utils.preciseTime();
+    this.currentSpawnInterval = this.getSpawnInterval();
+  },
+
+  getSpawnInterval: function() {
+    if (this.spawnIntervalRange) {
+      const [start, end] = this.spawnCountRange;
+      return utils.getRandomNumber(start, end);
+    }
+    return this.spawnInterval;
+  },
+
+  getSpawnCount: function() {
+    if (this.spawnCountRange) {
+      const [start, end] = this.spawnCountRange;
+      return utils.getRandomInt(start, end);
+    }
+    return this.spawnCount;
+  },
+
+  logic: function(map, loopTime) {
+    if (loopTime > this.lastSpawn + this.currentSpawnInterval) {
+      this.spawn(map);
+      this.lastSpawn = loopTime;
+      this.currentSpawnInterval = this.getSpawnInterval();
+    }
+  },
+
+  spawn: function(map) {
+    const spawnDistance = map.radius - 1;
+    const spawnCount = this.getSpawnCount();
+    for (let i=0;i<spawnCount;i++) {
+      const angle = utils.getRandomNumber(0, 360);
+      const position = utils.getVector(0, 0, angle, spawnDistance);
+      map.spawn(Entities.EnemySkeleton.new(), position.x, position.y);
+    }
+  }
+};
+
 function BasicMap(players) {
   const map = {
     name: 'basic',
     levelNum: 0,
     radius: 20,
     players: players.slice(),
+    spawner: Spawner.new({ spawnInterval: 20 }),
     playersByName: utils.keyBy(players, 'name'),
     stateUpdates: utils.Queue(),
     entities: [],
@@ -93,7 +136,8 @@ function BasicMap(players) {
 
   map.start = function() {
     // Spawn first torch
-    map.spawn(Entities.FireTower.new(), 0, 0);
+    map.tower = Entities.FireTower.new();
+    map.spawn(map.tower, 0, 0);
 
     // Spawn players
     for (const player of map.players) {
@@ -102,8 +146,6 @@ function BasicMap(players) {
       map.spawn(character, -2, -2);
     }
 
-    // Spawn enemies
-    map.spawn(Entities.EnemySkeleton.new(), 0, 5);
   }
 
   map.logic = function(loopTime, elapsed) {
@@ -128,6 +170,10 @@ function BasicMap(players) {
     for (const entityToRemove of toRemove) {
       map.entities.remove(entityToRemove);
     }
+
+    // Handle any enemy spawning logic
+    map.spawner.logic(map, loopTime, elapsed);
+
     return map.stateUpdates.drain();
   }
 

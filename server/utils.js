@@ -2,6 +2,14 @@ Array.prototype.remove = function(item){
     this.splice(this.indexOf(item), 1);
 };
 
+function getRandomNumber(start, end) {
+  return start + (Math.random() * (end - start));
+}
+
+function getRandomInt(start, end) {
+  return Math.floor(getRandomNumber(start, end));
+}
+
 function preciseTime() {
   const timeSections = process.hrtime();
   const seconds = timeSections[0] + timeSections[1] / 1000000000;
@@ -16,6 +24,13 @@ function keyBy(items, property) {
     },
     {},
   );
+}
+
+function getVector(x, y, angle, distance) {
+  const radians = degreesToRadians(angle);
+  const vy = Math.sin(radians) * distance;
+  const vx = Math.cos(radians) * distance;
+  return { x: x + vx, y: y + vy };
 }
 
 function Queue() {
@@ -54,9 +69,22 @@ function angleBetween(angle, start, end) {
   return angle >= start && angle <= end;
 }
 
+function degreesToRadians(degrees) {
+  return degrees * (Math.PI / 180);
+}
+
+function radiansToDegrees(radians) {
+  return radians / (Math.PI / 180);
+}
+
 module.exports = {
   preciseTime,
   normalizeAngle,
+  getRandomNumber,
+  getRandomInt,
+  degreesToRadians,
+  radiansToDegrees,
+  getVector,
   angleBetween,
   keyBy,
   Queue,

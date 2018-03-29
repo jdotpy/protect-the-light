@@ -121,7 +121,7 @@ const MeleeAttack = BaseAbility.extend({
 
 const ShootBow = BaseAbility.extend({
   name: 'shoot-bow',
-  damage: 5,
+  damage: 3,
 
   __init__: function __init__() {
     this.Arrow = require('./entities').Arrow;

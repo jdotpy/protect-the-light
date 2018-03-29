@@ -3,20 +3,6 @@ const Abilities = require('./abilities');
 const utils = require('./utils');
 const uuid = require('uuid/v4');
 
-function degreesToRadians(degrees) {
-  return degrees * (Math.PI / 180);
-}
-function radiansToDegrees(radians) {
-  return radians / (Math.PI / 180);
-}
-
-function getVector(x, y, angle, distance) {
-  const radians = degreesToRadians(angle);
-  const vy = Math.sin(radians) * distance;
-  const vx = Math.cos(radians) * distance;
-  return { x: x + vx, y: y + vy };
-}
-
 const TEAM_BAD = 'bad';
 const TEAM_GOOD = 'good';
 const TEAM_NEUTRAL = 'nuetral';
@@ -74,16 +60,16 @@ const BaseEntity = {
     const dx = target.x - this.x;
     const dy = target.y - this.y;
     const radians = Math.atan2(dy, dx);
-    const degrees = radiansToDegrees(radians);
+    const degrees = utils.radiansToDegrees(radians);
     return utils.normalizeAngle(degrees);
   },
 
   getVectorFromMe: function(distance) {
-    return getVector(this.x, this.y, this.orientation, distance)
+    return utils.getVector(this.x, this.y, this.orientation, distance)
   },
 
   applyVelocity: function(map, angle, distance) {
-    const target = getVector(this.x, this.y, angle, distance)
+    const target = utils.getVector(this.x, this.y, angle, distance)
     const collisions = map.moveEntity(this, target);
     return collisions;
   },
@@ -264,6 +250,7 @@ const Torch = BaseEntity.extend({
 })
 
 const Arrow = BaseEntity.extend({
+  size: 0.1,
   type: 'arrow',
   speed: 8,
   destroyed: false,
