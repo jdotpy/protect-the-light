@@ -250,7 +250,7 @@ const Torch = BaseEntity.extend({
 })
 
 const Arrow = BaseEntity.extend({
-  size: 0.1,
+  size: 0.2,
   type: 'arrow',
   speed: 8,
   destroyed: false,
