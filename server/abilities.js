@@ -80,7 +80,7 @@ const BaseAbility = {
 
   applyDamage: function(map, target) {
     const aggro = this.damage * this.aggroFactor;
-    target.takeDamage(this.damage, aggro);
+    target.takeDamage(this.damage, aggro, this);
     map.stateUpdates.add(Events.entityDamaged(target, {
       entity: target.id,
       ability: this.name,
@@ -108,6 +108,7 @@ const BaseAbility = {
 const MeleeAttack = BaseAbility.extend({
   name: 'melee',
   range: 2,
+  damage: 3,
 
   isValidTarget: function(map, target) {
     return this.inMeleeCone(
@@ -121,7 +122,7 @@ const MeleeAttack = BaseAbility.extend({
 
 const ShootBow = BaseAbility.extend({
   name: 'shoot-bow',
-  damage: 3,
+  damage: 2,
 
   __init__: function __init__() {
     this.Arrow = require('./entities').Arrow;

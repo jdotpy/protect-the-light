@@ -108,10 +108,18 @@ const BaseEntity = {
   }
 };
 
+const PlayerEntity = BaseEntity.extend({
+  logic: function(map, loopTime, elapsed) {
+    if (false) {
+
+    }
+  }
+})
+
 const Archer = BaseEntity.extend({
   team: TEAM_GOOD,
   type: 'archer',
-  hp: 50,
+  hp: 20,
   speed: 3.1,
   abilityTypes: [Abilities.ShootBow],
 });
@@ -119,7 +127,7 @@ const Archer = BaseEntity.extend({
 const Knight = BaseEntity.extend({
   team: TEAM_GOOD,
   type: 'knight',
-  hp: 100,
+  hp: 50,
   speed: 2.9,
   abilityTypes: [Abilities.MeleeAttack],
 });
@@ -181,6 +189,13 @@ const EnemyAI = BaseEntity.extend({
 
     // Ensure we have a current target
     if (!this.target || this.target.entity.isDestroyed()) {
+      // Reset current target
+      if (this.target) {
+        delete this.aggro[this.target.entity.id];
+        this.target = null;
+      }
+      
+      // Find a new one
       this.findTarget(map);
       // No directive if all targets are dead
       if (!this.target) {
@@ -224,12 +239,30 @@ const EnemyAI = BaseEntity.extend({
       this.target = newTarget;
     }
   },
+
+  takeAggro: function(entity, aggroValue) {
+    let currentAggro = this.aggro[entity.id];
+    if (!currentAggro) {
+      currentAggro = { aggroValue: 0, entity };
+      this.aggro[entity.id] = currentAggro;
+    }
+    currentAggro.aggroValue += aggroValue;
+    if (!this.target || currentAggro.aggroValue > this.target.aggroValue) {
+      this.target = currentAggro;
+    }
+  },
+
+  takeDamage: function takeDamage(damage, aggro, source) {
+    console.log('Taking damage:', damage, aggro, source);
+    this.super(takeDamage)(damage, aggro, source);
+    this.takeAggro(source.entity, aggro);
+  },
 });
 
 const EnemySkeleton = EnemyAI.extend({
   type: 'skele',
   hp: 10,
-  speed: 1,
+  speed: 2,
   attackRange: 0.2,
   abilityTypes: [Abilities.MeleeAttack],
 });
@@ -237,8 +270,8 @@ const EnemySkeleton = EnemyAI.extend({
 const FireTower = BaseEntity.extend({
   team: TEAM_NEUTRAL,
   type: 'fire-tower',
-  light: 10,
-  hp: 30,
+  light: 12,
+  hp: 50,
   size: 3,
 });
 
@@ -266,7 +299,7 @@ const Arrow = BaseEntity.extend({
 
     // Remove arrow from play
     this.destroyed = true;
-    collision.target.takeDamage(this.damage, this.aggro);
+    collision.target.takeDamage(this.damage, this.aggro, this.origin);
     map.stateUpdates.add(Events.entityDamaged(collision.target, {
       entity: collision.target.id,
       ability: this.name,

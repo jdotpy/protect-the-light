@@ -126,39 +126,42 @@ const RENDERERS = {
     const size = entity.size * renderer.SCALE_FACTOR;
 
     // We want the bottom left corner of the entity
-    const startX = location.x - (size / 2);
-    const startY = location.y + (size / 2);
-
-    // Give a base rectangle on which to draw so low-health
-    // entities aren't just transparent
-    ctx.fillStyle = '#777';
-    ctx.fillRect(startX, startY, size, barHeight);
+    const leftX = location.x - (size / 2);
+    const bottomY = location.y + (size / 2);
+    const topY = location.y - (size / 2);
 
     // Draw the rect representing the current health state as a
     // percentage of the width
-    const healthPct = entity.health / entity.hp;
-    const fillSize = Math.round(healthPct * size);
+    if (entity.health !== entity.hp) {
+      // Give a base rectangle on which to draw so low-health
+      // entities aren't just transparent
+      ctx.fillStyle = '#777';
+      ctx.fillRect(leftX, bottomY, size, barHeight);
 
-    let healthColor;
-    if (healthPct <= .15) {
-      healthColor = '#b70000';
+      const healthPct = entity.health / entity.hp;
+      const fillSize = Math.round(healthPct * size);
+
+      let healthColor;
+      if (healthPct <= .15) {
+        healthColor = '#b70000';
+      }
+      else if (healthPct <= .40) {
+        healthColor = '#d8d800';
+      }
+      else {
+        healthColor = '#00b70c';
+      }
+      ctx.fillStyle = healthColor;
+      ctx.fillRect(leftX, bottomY, fillSize, barHeight);
     }
-    else if (healthPct <= .40) {
-      healthColor = '#d8d800';
-    }
-    else {
-      healthColor = '#00b70c';
-    }
-    ctx.fillStyle = healthColor;
-    ctx.fillRect(startX, startY, fillSize, barHeight);
 
     // If the unit is a player, draw the name
     if (entity.playerID) {
+      const nameFontSize = 12;
       const name = entity.player.name;
-      ctx.fillStyle = '#000000';
-      ctx.font = barHeight.toString() + 'px Arial';
-      ctx.fillText(name,startX,startY + barHeight);
-      // Draw name
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${nameFontSize}px Arial`;
+      ctx.fillText(name,leftX,topY - nameFontSize);
     }
   },
 }
