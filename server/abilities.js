@@ -2,7 +2,7 @@ const Events = require('./events');
 const utils = require('./utils');
 
 const BaseAbility = {
-  cooldown: 1000,
+  cooldown: 1,
   castTime: 0,
   aggroFactor: 1,
   damage: 1,
@@ -23,7 +23,7 @@ const BaseAbility = {
   },
   
   onCooldown: function() {
-    return this.lastUsed + this.cooldown > new Date().valueOf();
+    return this.lastUsed + this.cooldown > utils.preciseTime();
   },
 
   canUse: function() {
@@ -48,7 +48,7 @@ const BaseAbility = {
   },
 
   use: function(map) {
-    const timestamp = new Date().valueOf();
+    const timestamp = utils.preciseTime();
 
     // If this is the first call to initiate an ability trigger the start-casting routine
     if (!this.isCasting) {

@@ -10,7 +10,7 @@ MAX_NAME_LENGTH = 50;
 function Game() {
   const game = {
     id: uuid(),
-    startTime: new Date(),
+    startTime: utils.preciseTime(),
     players: [],
     stateUpdates: utils.Queue(),
     loopCount: 0,

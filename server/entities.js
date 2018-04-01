@@ -253,7 +253,6 @@ const EnemyAI = BaseEntity.extend({
   },
 
   takeDamage: function takeDamage(damage, aggro, source) {
-    console.log('Taking damage:', damage, aggro, source);
     this.super(takeDamage)(damage, aggro, source);
     this.takeAggro(source.entity, aggro);
   },
@@ -273,6 +272,75 @@ const FireTower = BaseEntity.extend({
   light: 12,
   hp: 50,
   size: 3,
+  torchSpawnInterval: 30,
+
+  __init__: function __init__() {
+    this.super(__init__)();
+    this.radius = this.size / 2;
+    this.torches = {
+      topLeft: null,
+      topRight: null,
+      bottomLeft: null,
+      bottomRight: null,
+    };
+    this.lastTorchSpawn = utils.preciseTime();
+  },
+
+  getTorchSpawnCoords: function(location) {
+    switch (location) {
+      case 'topLeft': 
+        return { x: this.x - this.radius, y: this.y + this.radius };
+      case 'topRight': 
+        return { x: this.x + this.radius, y: this.y + this.radius };
+      case 'bottomRight': 
+        return { x: this.x + this.radius, y: this.y - this.radius };
+      case 'bottomLeft': 
+        return { x: this.x - this.radius, y: this.y - this.radius };
+    }
+  },
+
+  shouldSpawnTorch: function() {
+    return this.lastTorchSpawn + this.torchSpawnInterval < utils.preciseTime();
+  },
+
+  canSpawnTorch: function() {
+    for (const torchLocation of Object.keys(this.torches)) {
+      const torch = this.torches[torchLocation];
+      // If we haven't spawned a torch here before
+      if (!torch) {
+        return true;
+      }
+      // If the torch was destroyed or moved
+      const spawn = this.getTorchSpawnCoords(torchLocation);
+      if (torch.isDestroyed() || spawn.x !== torch.x || spawn.y !== torch.y) {
+        delete this.torches[torchLocation];
+        return true;
+      }
+    }
+    return false;
+  },
+
+  spawnTorch: function(map) {
+    const emptyLocation = Object.keys(this.torches)
+      .find((location) => !this.torches[location]);
+    if (!emptyLocation) {
+      return false;
+    }
+
+    const newTorch = Torch.new();
+    const spawnLocation = this.getTorchSpawnCoords(emptyLocation);
+    map.spawn(newTorch, spawnLocation.x, spawnLocation.y);
+    this.torches[emptyLocation] = newTorch;
+    this.lastTorchSpawn = utils.preciseTime();
+    return newTorch;
+  },
+
+  logic: function(map, loopTime, elapsed) {
+    if (!this.isDestroyed() && this.shouldSpawnTorch() && this.canSpawnTorch()) {
+      this.spawnTorch(map);
+    }
+  },
+
 });
 
 const Torch = BaseEntity.extend({

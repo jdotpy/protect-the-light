@@ -136,7 +136,7 @@ function BasicMap(players) {
 
   map.start = function() {
     // Spawn first torch
-    map.tower = Entities.FireTower.new();
+    map.tower = Entities.FireTower.new({ torchSpawnInterval: 1 });
     map.spawn(map.tower, 0, 0);
 
     // Spawn players
