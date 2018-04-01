@@ -69,7 +69,7 @@ function BasicMap(players) {
     levelNum: 0,
     radius: 20,
     players: players.slice(),
-    spawner: Spawner.new({ spawnInterval: 20, spawnCountRange: [1, 3] }),
+    spawner: Spawner.new({ spawnInterval: 16, spawnCountRange: [1, 4] }),
     playersByName: utils.keyBy(players, 'name'),
     stateUpdates: utils.Queue(),
     entities: [],
