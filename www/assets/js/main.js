@@ -154,7 +154,6 @@ function GameClient(path) {
     }
 
     function onMouseEvent(e) {
-      console.log(e);
       if (e.buttons === 1) { // Primary button
         const position = { x: e.pageX, y: e.pageY };
         updateOrientation(position);
@@ -173,7 +172,7 @@ function GameClient(path) {
 
     // Orientation using the mouse
     document.onmousedown = onMouseEvent;
-    //document.onmousemove = onMouseEvent;
+    document.onmousemove = onMouseEvent;
 
     //// Abilities
     Mousetrap.bind('tab', (e) => {
