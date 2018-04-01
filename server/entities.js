@@ -255,7 +255,6 @@ const EnemyAI = BaseEntity.extend({
       const moveAngle = this.angleTowards(this.target.entity);
       if (moveAngle !== this.orientation) {
         this.setOrientation(map, moveAngle);
-        map.stateUpdates.add(Events.entityRotate(this));
       }
       const collisions = this.applyVelocity(map, moveAngle, this.speed * elapsed);
       map.stateUpdates.add(Events.entityMove(this));
@@ -265,9 +264,10 @@ const EnemyAI = BaseEntity.extend({
 
   collide: function(map, collision) {
     // If we collide we should target the thing we ran into
-    if (collision.source === this) {
+    if (collision.source === this && collision.target.team !== this.team) {
       const blocker = collision.target;
       const newTarget = { entity: blocker, aggroValue: this.target.aggroValue };
+      this.setOrientation(map, this.angleTowards(blocker));
       this.aggro[blocker.id] = newTarget;
       this.target = newTarget;
     }

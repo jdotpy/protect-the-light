@@ -124,7 +124,7 @@ function BasicMap(players) {
       towards: movingTowards,
       source: mover,
       target: blocker,
-      blocking: blocking,
+      blocking,
     });
     mover.collide(this, collision);
     blocker.collide(this, collision);
