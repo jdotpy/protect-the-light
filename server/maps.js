@@ -3,6 +3,14 @@ const Events = require('./events');
 const Entities = require('./entities');
 
 const Collision = {
+  otherMember(self) {
+    // Return the entity that you're colliding with
+    if (this.target === self) {
+      return this.source;
+    }
+    return this.target;
+  },
+
   hasMember(entity) {
     if (this.target === entity || this.source === entity) {
       return true;
@@ -91,41 +99,61 @@ function BasicMap(players) {
     map.stateUpdates.add(Events.spawn(entity));
   }
 
+  map.handleCollision = function(mover, blocker, target) {
+    // We're colliding, now determine if we are moving away or towards
+    const distanceFromSource = blocker.distanceTo(mover);
+    const distanceFromTarget = blocker.distanceTo(target);
+    const movingTowards = distanceFromSource >= distanceFromTarget;
+
+    // Determine if it was a blocking collision
+    let blocking = true;
+    if (!movingTowards) {
+      // Anything moving away from an object won't block
+      blocking = false;
+    }
+    else if (blocker.team === mover.team) {
+      // Dont block them if they're on your team
+      blocking = false;
+    }
+    else if (blocker.team === mover.team) {
+      // Dont block them if they're on your team
+      blocking = false;
+    }
+
+    const collision = Collision.new({
+      towards: movingTowards,
+      source: mover,
+      target: blocker,
+      blocking: blocking,
+    });
+    mover.collide(this, collision);
+    blocker.collide(this, collision);
+    return collision;
+  },
+
   map.moveEntity = function(mover, target) {
     const collisions = [];
     let blocked = false;
 
     for (const entity of map.entities.filter((e) => e.collision)) {
-      // Dont collide with yourself
-      if (entity === mover) {
+      // Dont register collide events with yourself
+      if (entity === mover || entity.carriedBy) {
         continue
       }
       const collisionDistance = entity.collisionRadius() + mover.collisionRadius();
-      const distanceFromTarget = entity.distanceTo(target);
-
-      if (distanceFromTarget < collisionDistance) {
-        // We're colliding, now determine if we are moving away or towards
-        const distanceFromSource = entity.distanceTo(mover);
-        let towards;
-        if (distanceFromSource >= distanceFromTarget) {
-          // We're moving towards the object
+      if (entity.distanceTo(target) < collisionDistance) {
+        const collision = this.handleCollision(mover, entity, target);
+        collisions.push(collision);
+        if (collision.blocking) {
           blocked = true;
-          towards = true;
         }
-        else {
-          // We're moving away from the object, allow movement
-          towards = false;
-        }
-        const collision = Collision.new({ towards, source: mover, target: entity });
-        collisions.push(collision)
-        mover.collide(this, collision);
-        entity.collide(this, collision);
       }
     }
     // Now if we didn't get blocked by a collision go ahead with relocation
     if (!blocked) {
       mover.x = target.x;
       mover.y = target.y;
+      mover.onMove(this);
     }
     return collisions;
   }

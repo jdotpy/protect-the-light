@@ -176,10 +176,14 @@ function GameClient(path) {
     //document.onmousemove = onMouseEvent;
 
     //// Abilities
-    Mousetrap.bind('space', () => client.sendMessage({ event: 'player.useAbility', ability: 0 }));
-    Mousetrap.bind('q', () => client.sendMessage({ event: 'player.useAbility', ability: 1 }));
-    Mousetrap.bind('e', () => client.sendMessage({ event: 'player.useAbility', ability: 2 }));
-    Mousetrap.bind('r', () => client.sendMessage({ event: 'player.useAbility', ability: 3 }));
+    Mousetrap.bind('tab', (e) => {
+      e.preventDefault();
+      client.sendMessage({ event: 'player.useAbility', ability: 0 });
+    });
+    Mousetrap.bind('space', () => client.sendMessage({ event: 'player.useAbility', ability: 1 }));
+    Mousetrap.bind('q', () => client.sendMessage({ event: 'player.useAbility', ability: 2 }));
+    Mousetrap.bind('e', () => client.sendMessage({ event: 'player.useAbility', ability: 3 }));
+    Mousetrap.bind('r', () => client.sendMessage({ event: 'player.useAbility', ability: 4 }));
   }
   
   client.markPlayerReady = function() {

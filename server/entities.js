@@ -16,6 +16,7 @@ const BaseEntity = {
   orientation: 0,
   collision: true,
   abilityTypes: [],
+  carryDistance: 1,
 
   __init__: function() {
     this.id = uuid();
@@ -30,6 +31,18 @@ const BaseEntity = {
     }
   },
 
+  onMove: function(map) {
+
+  },
+
+  onRotate: function(map) {
+
+  },
+
+  onDestroyed: function() {
+
+  },
+
   collide: function() {
 
   },
@@ -37,6 +50,9 @@ const BaseEntity = {
   takeDamage: function(damage, aggro, source) {
     if (this.health) {
       this.health = Math.max(this.health - damage, 0);
+    }
+    if (this.health <= 0) {
+      this.onDestroyed();
     }
   },
 
@@ -74,8 +90,10 @@ const BaseEntity = {
     return collisions;
   },
 
-  applyRotation: function(degrees) {
-    this.orientation = (this.orientation + degrees) % 360;
+  setOrientation: function(map, angle) {
+    this.orientation = angle;
+    this.onRotate(map);
+    map.stateUpdates.add(Events.entityRotate(this));
   },
 
   stateDetails: function() {
@@ -105,31 +123,46 @@ const BaseEntity = {
     const distance = this.distanceTo(target);
     const range = this.attackRange + target.collisionRadius() + this.collisionRadius();
     return distance <= range;
-  }
+  },
+
+  isBlockingObject: function() {
+    return this.collision;
+  },
 };
 
 const PlayerEntity = BaseEntity.extend({
   logic: function(map, loopTime, elapsed) {
-    if (false) {
-
+  },
+  updateCarriedObjects: function(map) {
+    if (this.carryingTorch) {
+      const newObjectLocation = this.getVectorFromMe(this.carryDistance);
+      this.carryingTorch.x = newObjectLocation.x;
+      this.carryingTorch.y = newObjectLocation.y;
+      map.stateUpdates.add(Events.entityMove(this.carryingTorch));
     }
-  }
+  },
+  onMove: function(map) {
+    this.updateCarriedObjects(map);
+  },
+  onRotate: function(map) {
+    this.updateCarriedObjects(map);
+  },
 })
 
-const Archer = BaseEntity.extend({
+const Archer = PlayerEntity.extend({
   team: TEAM_GOOD,
   type: 'archer',
   hp: 20,
   speed: 3.1,
-  abilityTypes: [Abilities.ShootBow],
+  abilityTypes: [Abilities.ToggleCarryTorch, Abilities.ShootBow],
 });
 
-const Knight = BaseEntity.extend({
+const Knight = PlayerEntity.extend({
   team: TEAM_GOOD,
   type: 'knight',
   hp: 50,
   speed: 2.9,
-  abilityTypes: [Abilities.MeleeAttack],
+  abilityTypes: [Abilities.ToggleCarryTorch, Abilities.MeleeAttack],
 });
 
 const EnemyAI = BaseEntity.extend({
@@ -221,7 +254,7 @@ const EnemyAI = BaseEntity.extend({
       // Else attempt to move into range
       const moveAngle = this.angleTowards(this.target.entity);
       if (moveAngle !== this.orientation) {
-        this.orientation = moveAngle;
+        this.setOrientation(map, moveAngle);
         map.stateUpdates.add(Events.entityRotate(this));
       }
       const collisions = this.applyVelocity(map, moveAngle, this.speed * elapsed);
@@ -310,11 +343,11 @@ const FireTower = BaseEntity.extend({
       if (!torch) {
         return true;
       }
-      // If the torch was destroyed or moved
+      // If the torch was destroyed or moved, clear for next time, resetting cooldown
       const spawn = this.getTorchSpawnCoords(torchLocation);
       if (torch.isDestroyed() || spawn.x !== torch.x || spawn.y !== torch.y) {
-        delete this.torches[torchLocation];
-        return true;
+        this.torches[torchLocation] = null;
+        this.lastTorchSpawn = utils.preciseTime();
       }
     }
     return false;
@@ -340,7 +373,6 @@ const FireTower = BaseEntity.extend({
       this.spawnTorch(map);
     }
   },
-
 });
 
 const Torch = BaseEntity.extend({
@@ -348,6 +380,13 @@ const Torch = BaseEntity.extend({
   type: 'torch',
   hp: 10,
   light: 5,
+
+  onDestroyed: function() {
+    if (this.carriedBy) {
+      this.carriedBy.carryingTorch = null;
+      this.carriedBy = null;
+    }
+  }
 })
 
 const Arrow = BaseEntity.extend({
@@ -361,15 +400,16 @@ const Arrow = BaseEntity.extend({
   },
 
   collide: function(map, collision) {
-    if (this.isDestroyed() || collision.target === this.origin.entity) {
+    if (this.isDestroyed() || collision.hasMember(this.originEntity)) {
       return false; 
     }
+    const otherEntity = collision.otherMember(this);
 
     // Remove arrow from play
     this.destroyed = true;
-    collision.target.takeDamage(this.damage, this.aggro, this.origin);
-    map.stateUpdates.add(Events.entityDamaged(collision.target, {
-      entity: collision.target.id,
+    otherEntity.takeDamage(this.damage, this.aggro, this.origin);
+    map.stateUpdates.add(Events.entityDamaged(otherEntity, {
+      entity: otherEntity.id,
       ability: this.name,
     }));
   },

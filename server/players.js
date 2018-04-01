@@ -82,8 +82,7 @@ const Player = {
           this.sendMessage(errorMessage(`Invalid orientation.direction: ${message.direction}`));
           return false;
         }
-        this.rotate = angle;
-        this.character.orientation = angle;
+        this.newOrientation = angle;
         return true;
       }
       case 'player.useAbility': {
@@ -166,9 +165,9 @@ const Player = {
         );
         map.stateUpdates.add(Events.entityMove(this.character));
       }
-      if (this.rotate) {
-        map.stateUpdates.add(Events.entityRotate(this.character));
-        this.rotate = null;
+      if (this.newOrientation) {
+        this.character.setOrientation(map, this.newOrientation);
+        this.newOrientation = null;
       }
     }
   },

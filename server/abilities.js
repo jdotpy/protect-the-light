@@ -59,6 +59,7 @@ const BaseAbility = {
     // Check if we're done casting
     if (this.isDone(timestamp)) {
       this.apply(map);
+      map.stateUpdates.add(Events.entityAbility(this.entity, this));
       this.isCasting = false;
       this.lastUsed = this.startTime + this.castTime;
       return true;
@@ -92,7 +93,6 @@ const BaseAbility = {
   },
 
   apply: function(map) {
-    map.stateUpdates.add(Events.entityAbility(this.entity, this));
     for (const target of this.getAllTargets(map)) {
       if (this.isValidTarget(map, target)) {
         this.applyDamage(map, target);
@@ -139,10 +139,41 @@ const ShootBow = BaseAbility.extend({
       origin: this,
     }), location.x, location.y);
   },
+});
 
+const ToggleCarryTorch = BaseAbility.extend({
+  name: 'toggle-carry-torch',
+  range: 1.5,
+  apply: function(map) {
+    // Cover the set-down-torch case
+    if (this.entity.carryingTorch) {
+      map.stateUpdates.add(Events.entityDropTorch(this.entity, this.entity.carryingTorch));
+      this.entity.carryingTorch.carriedBy = null;
+      this.entity.carryingTorch = null;
+      return;
+    }
+
+    // We don't have one, now determine if there's one in range
+    const torches = map.entities.filter((e) => e.type === 'torch');
+    const closest = { distance: Infinity, torch: null };
+    for (const torch of torches) {
+      const distance = this.entity.distanceTo(torch);
+      if (distance < this.range && distance < closest.distance) {
+        closest.torch = torch;
+        closest.distance = distance;
+      }
+    }
+    // Now if we found one in range, pick up the closest torch
+    if (closest.torch) {
+      this.entity.carryingTorch = closest.torch;
+      this.entity.carryingTorch.carriedBy = this.entity;
+      map.stateUpdates.add(Events.entityPickupTorch(this.entity, closest.torch));
+    }
+  },
 });
 
 module.exports = {
   ShootBow,
   MeleeAttack,
+  ToggleCarryTorch,
 };

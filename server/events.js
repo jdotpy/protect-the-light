@@ -1,5 +1,4 @@
 const EVENTS = {
-
   playerConnectState: (game) => ({
     event: 'init.gameState',
     players: game.getPlayerState(),
@@ -80,6 +79,17 @@ const EVENTS = {
     ability: ability.name,
   }),
 
+  entityPickupTorch: (entity, torch) => ({
+    event: 'entity.pickUpTorch',
+    entity: entity.id,
+    torch: torch.id,
+  }),
+
+  entityDropTorch: (entity, torch) => ({
+    event: 'entity.dropTorch',
+    entity: entity.id,
+    torch: torch.id,
+  }),
 };
 
 module.exports = EVENTS;
