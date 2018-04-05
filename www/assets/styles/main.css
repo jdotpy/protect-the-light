@@ -3,3 +3,60 @@ body {
   color: #ddd;
   overflow: hidden;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.g-border-card {
+  margin: 0;
+  padding: 1rem;
+  border-left: solid 2px #444;
+  border-top: solid 2px #444;
+  box-shadow: 2px 3px #222;
+}
+
+.g-flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+#overlay {
+  margin: 4rem;
+}
+
+#playerList--box {
+  display: block;
+  list-style-type: none;
+  margin: 2rem;
+  padding: 2rem;
+  width: 30rem;
+}
+
+#playerList--list {
+  display: block;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.playerList--item {
+  padding: .5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+#playerInitForm {
+  padding: 2rem;
+  display: block;
+}
+
+#initBox {
+  justify-content: center;
+}
+
+#title {
+  margin-bottom: 4rem;
+  text-align: center;
+}

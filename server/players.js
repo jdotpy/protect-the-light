@@ -119,6 +119,11 @@ const Player = {
         return true;
       }
       case 'init.chooseName': {
+        if (!message.name) {
+          this.sendMessage(errorMessage('Invalid name'));
+          return false;
+        }
+
         this.name = message.name.slice(0, MAX_NAME_LENGTH);
         this.game.playerUpdated(this);
         return true;
