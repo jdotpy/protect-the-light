@@ -40,7 +40,16 @@ function GameClient(path) {
     
     console.log('Got connected!')
     document.uiState.game.connected = true;
-    setInterval(client.sendPing, 3000);
+    client.pingInterval = setInterval(client.sendPing, 3000);
+  }
+
+  client.onServerDisconnect = function() {
+    client.state.connected = false;
+    client.state.status = 'disconnected';
+    client.state.connectError = 'Disconnected from the server. Please reload';
+
+    client.updateUI();
+    clearInterval(client.pingInterval, 3000);
   }
 
   client.onServerError = function(error) {
@@ -274,6 +283,7 @@ function GameClient(path) {
   client.socket.onmessage = client.onServerMessage;
   client.socket.onopen = client.onServerConnect;
   client.socket.onerror = client.onServerError;
+  client.socket.onclose = client.onServerDisconnect;
 
   return client;
 }

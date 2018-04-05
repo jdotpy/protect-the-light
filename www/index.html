@@ -15,8 +15,10 @@
     <div id="ui">
       <div id="overlay" v-if="!game.connected">
         <h1>Lightwatch</h1>
-				<p>Connecting</p>
-			</div>
+        <p v-if="game.status === 'disconnected'" class="alert alert-danger">
+          You were disconnected from the server. Please reload.
+        </p>
+      </div>
 
       <div id="overlay" class="container" v-if="game.status === 'init'">
         <div id="title">

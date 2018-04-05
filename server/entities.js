@@ -194,14 +194,16 @@ const EnemyAI = BaseEntity.extend({
       this.target = bestTarget;
       return this.target;
     }
-    // Otherwise look for new torches to destroy
-    const torches = map.entities.filter((e) => e.team === TEAM_NEUTRAL);
-    for (const torch of torches) {
-      this.aggro[torch.id] = { aggroValue: 1, entity: torch };
+    // Otherwise look for new baddies to destroy
+    const targetable = map.entities.filter((e) => e.team === TEAM_GOOD);
+    for (const baddie of targetable) {
+      this.aggro[baddie.id] = { aggroValue: 1, entity: baddie };
     }
-    // If there were any torches, use the first one as our new target, otherwise we got nuthin
-    if (torches.length > 0) {
-      this.target = { aggroValue: this.aggro[torches[0].id].aggroValue, entity: torches[0] };
+    // If there were any baddies, use the closest one as our new target, otherwise we got nuthin
+    if (targetable.length > 0) {
+      targetable.sort((a, b) => a.distanceTo(this) - b.distanceTo(this));
+      const closest = targetable[0];
+      this.target = { aggroValue: this.aggro[closest.id].aggroValue, entity: closest };
     }
     else {
       this.target = null;
@@ -300,12 +302,12 @@ const EnemySkeleton = EnemyAI.extend({
 });
 
 const FireTower = BaseEntity.extend({
-  team: TEAM_NEUTRAL,
+  team: TEAM_GOOD,
   type: 'fire-tower',
   light: 12,
   hp: 50,
   size: 3,
-  torchSpawnInterval: 30,
+  torchSpawnInterval: 20,
 
   __init__: function __init__() {
     this.super(__init__)();
@@ -376,7 +378,7 @@ const FireTower = BaseEntity.extend({
 });
 
 const Torch = BaseEntity.extend({
-  team: TEAM_NEUTRAL,
+  team: TEAM_GOOD,
   type: 'torch',
   hp: 10,
   light: 5,
@@ -400,10 +402,15 @@ const Arrow = BaseEntity.extend({
   },
 
   collide: function(map, collision) {
-    if (this.isDestroyed() || collision.hasMember(this.originEntity)) {
+    if (this.isDestroyed()) {
       return false; 
     }
     const otherEntity = collision.otherMember(this);
+
+    // Dont do friendly fire
+    if (otherEntity.team === this.origin.entity.team) {
+      return false;
+    }
 
     // Remove arrow from play
     this.destroyed = true;

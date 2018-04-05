@@ -69,7 +69,7 @@ function BasicMap(players) {
     levelNum: 0,
     radius: 20,
     players: players.slice(),
-    spawner: Spawner.new({ spawnInterval: 16, spawnCountRange: [1, 4] }),
+    spawner: Spawner.new({ spawnInterval: 20, spawnCountRange: [1, 2] }),
     playersByName: utils.keyBy(players, 'name'),
     stateUpdates: utils.Queue(),
     entities: [],
@@ -164,7 +164,7 @@ function BasicMap(players) {
 
   map.start = function() {
     // Spawn first torch
-    map.tower = Entities.FireTower.new({ torchSpawnInterval: 1 });
+    map.tower = Entities.FireTower.new();
     map.spawn(map.tower, 0, 0);
 
     // Spawn players
