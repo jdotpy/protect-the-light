@@ -67,7 +67,7 @@ function BasicMap(players) {
   const map = {
     name: 'basic',
     levelNum: 0,
-    radius: 20,
+    radius: 30,
     players: players.slice(),
     spawner: Spawner.new({ spawnInterval: 20, spawnCountRange: [1, 2] }),
     playersByName: utils.keyBy(players, 'name'),

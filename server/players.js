@@ -19,10 +19,7 @@ const Player = {
   __init__: function() {
     this.id =  uuid();
     this.commands = utils.Queue();
-    this.sendMessage({
-      event: 'init.you',
-      player: this.stateDetails(),
-    });
+    this.sendMessage(Events.playerConnect(this));
     this.movement = {};
   },
 

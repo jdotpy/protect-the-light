@@ -44,3 +44,40 @@ function cacher(f) {
     return value;
   }
 }
+
+function EventBus() {
+  const subscriptions = {};
+
+  function registerMany(registrations) {
+    for (const eventName of Object.keys(registrations)) {
+      register(eventName, registrations[eventName]);
+    }
+  }
+
+  function register(eventName, callback) {
+    let currentRegistrations = subscriptions[eventName];
+    if (currentRegistrations){
+      currentRegistrations.push(callback);
+    } else {
+      currentRegistrations = [callback];
+      subscriptions[eventName] = currentRegistrations;
+    }
+  }
+
+  function emit(eventName) {
+    const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+    const eventArgs = args.slice(1);
+    const currentRegistrations = subscriptions[eventName];
+    if (currentRegistrations) {
+      for (const registration of currentRegistrations) {
+        registration.apply(null, eventArgs);
+      }
+    }
+  }
+
+  return {
+    registerMany,
+    register,
+    emit,
+  };
+}

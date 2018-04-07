@@ -46,7 +46,10 @@ function Layer(index, options) {
     draw: options.draw,
     clear: function() {
       this.ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
+    },
+    remove: function() {
+      this.canvas.parentNode.removeChild(canvas);
+    },
   };
   // Manage styles & visibility
   if (options.hidden) {
@@ -68,19 +71,28 @@ const getCachedRadialImage = cacher(function(radius, options) {
   return layer.canvas;
 })
 
+
+function getCharImageSize(renderer, entity) {
+  const size = entity.size * renderer.SCALE_FACTOR;
+  return {
+    x: -1.5 * size,
+    y: size * -2,
+    dx: size * 4, 
+    dy: size * 4,
+  }
+}
+
 const RENDERERS = {
   'archer': (renderer, ctx, entity, location) => {
-    const size = entity.size * renderer.SCALE_FACTOR;
-    const radius = Math.floor(size / 2);
     const image = renderer.getImageAsset('img_entity_archer');
-    ctx.drawImage(image, -75, -100, 200, 200);
+    const sizing = getCharImageSize(renderer, entity);
+    ctx.drawImage(image, sizing.x, sizing.y, sizing.dx, sizing.dy);
   },
   'knight': (renderer, ctx, entity, location) => {
     // We'll eventually want orientation:
-    const size = entity.size * renderer.SCALE_FACTOR;
-    const radius = Math.floor(size / 2);
     const image = renderer.getImageAsset('img_entity_knight');
-    ctx.drawImage(image, -75, -100, 200, 200);
+    const sizing = getCharImageSize(renderer, entity);
+    ctx.drawImage(image, sizing.x, sizing.y, sizing.dx, sizing.dy);
   },
   'fire-tower': (renderer, ctx, entity, location) => {
     const size = entity.size * renderer.SCALE_FACTOR;
@@ -101,7 +113,7 @@ const RENDERERS = {
     const size = entity.size * renderer.SCALE_FACTOR;
     const radius = Math.floor(size / 2);
     const image = renderer.getImageAsset('img_object_arrow');
-    ctx.drawImage(image, -75, -5, 75, 11);
+    ctx.drawImage(image, -7.5 * size, -.5 * size, 7.5 * size, size);
   },
   'torch': (renderer, ctx, entity, location) => {
     const size = entity.size * renderer.SCALE_FACTOR;
@@ -116,10 +128,9 @@ const RENDERERS = {
     ctx.drawImage(flame, -1 * radius, -1 * radius);
   },
   'skele': (renderer, ctx, entity, location) => {
-    const size = entity.size * renderer.SCALE_FACTOR;
-    const radius = Math.floor(size / 2);
     const image = renderer.getImageAsset('img_entity_skele');
-    ctx.drawImage(image, -75, -100, 200, 200);
+    const sizing = getCharImageSize(renderer, entity);
+    ctx.drawImage(image, sizing.x, sizing.y, sizing.dx, sizing.dy);
   },
   'unitFrame': (renderer, ctx, entity, location) => {
     const barHeight = 10;
@@ -167,7 +178,7 @@ const RENDERERS = {
 }
 
 function Renderer(viewport, client) {
-  const SCALE_FACTOR =  50;
+  const SCALE_FACTOR =  40;
   const renderer = {
     SCALE_FACTOR,
     frame: 0,

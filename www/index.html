@@ -13,14 +13,14 @@
 
   <body>
     <div id="ui">
-      <div id="overlay" v-if="!game.connected">
+      <div id="intro" class="g-overlay" v-if="!connected">
         <h1>Lightwatch</h1>
-        <p v-if="game.status === 'disconnected'" class="alert alert-danger">
+        <p v-if="gameStatus === 'disconnected'" class="alert alert-danger">
           You were disconnected from the server. Please reload.
         </p>
       </div>
 
-      <div id="overlay" class="container" v-if="game.status === 'init'">
+      <div id="intro" class="g-overlay container" v-if="gameStatus === 'init'">
         <div id="title">
           <h1>Lightwatch</h1>
         </div>
@@ -29,23 +29,23 @@
           <div id="playerList--box" class="col-sm g-border-card">
             <h3>Players</h3>
             <ul id="playerList--list">
-              <li class="playerList--item g-border-card" v-for="player in game.players">
+              <li class="playerList--item g-border-card" v-for="player in players">
                 <span v-if="!player.role">[ - Selecting a role - ]</span>
                 <span v-if="player.role">[{{ player.role }}]</span>
 
                 <span v-if="!player.name">Unknown</span>
                 <span v-if="player.name">{{ player.name }}</span>
 
-                <span v-if="player.id === game.playerID"> (You)</span>
+                <span v-if="player.id === playerID"> (You)</span>
               </li>
             </ul>
           </div>
           <div id="playerInitForm" class="col-md" v-if="!isPlayerSetup()">
             <p>Select a name and role to begin.</p>
             <form v-on:submit.prevent="onPlayerSetupSubmit">
-              <input v-model="init.name" placeholder="username" />
-              <p class="error" v-if="init.error">{{ init.error }}</p>
-              <select v-model="init.role">
+              <input v-model="initForm.name" placeholder="username" />
+              <p class="error" v-if="initForm.error">{{ initForm.error }}</p>
+              <select v-model="initForm.role">
                 <option disabled value="">Select a role</option>
                 <option value="archer">Archer</option>
                 <option value="knight">Knight</option>
@@ -54,15 +54,27 @@
             </form>
           </div>
           <div id="playerInitForm" class="col-md" v-if="isPlayerSetup()">
-            <span v-show="currentPlayer().ready">
+            <span v-show="me.ready">
               <p>Waiting for remaining players to be ready...</p>
             
             </span>
-            <span v-show="!currentPlayer().ready">
+            <span v-show="!me.ready">
               <p>Waiting for additional players. When you're ready to begin select the button below.</p>
               <button class="btn btn-primary" v-on:click="onPlayerReady">Ready</button>
             </span>
           </div>
+        </div>
+      </div>
+
+      <div id="ui-bar" v-if="gameStatus === 'playing'">
+        <h3>[{{ me.role }}] {{ me.name }}</h3>
+        <div id="gauges">
+          <gauge
+            id="healthBar"
+            :max-value="playerCharacter.hp"
+            :value="playerCharacter.health"
+            color="green"
+          />
         </div>
       </div>
     </div>

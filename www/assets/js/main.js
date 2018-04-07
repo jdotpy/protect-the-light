@@ -9,6 +9,7 @@ function GameClient(path) {
     players: {},
     entities: {},
   };
+  client.eventBus =  EventBus();
   document.gameState = client.state; // for debugging purposes, add to document
 
   const uiUpdateEvents = toSet([
@@ -29,31 +30,25 @@ function GameClient(path) {
     else {
       client.handleEvent(message);
     }
-    if (client.uiStale) {
-      client.updateUI();
-      client.uiStale = false;
-    }
   }
 
   client.onServerConnect = function() {
     client.state.connected = true;
-    
+    client.eventBus.emit('sys.connected');
     console.log('Got connected!')
-    document.uiState.game.connected = true;
     client.pingInterval = setInterval(client.sendPing, 3000);
   }
 
   client.onServerDisconnect = function() {
     client.state.connected = false;
+    client.eventBus.emit('sys.connected');
     client.state.status = 'disconnected';
-    client.state.connectError = 'Disconnected from the server. Please reload';
-
-    client.updateUI();
     clearInterval(client.pingInterval, 3000);
   }
 
   client.onServerError = function(error) {
-    console.log('got an error:', error);
+    client.eventBus.emit('sys.error', error);
+    console.log(client.socket, error)
   }
 
   client.sendMessage = function(message) {
@@ -77,16 +72,6 @@ function GameClient(path) {
   client.getCurrentPlayerEntity = function() {
     const entityID = client.getCurrentPlayer().entityID;
     return client.state.entities[entityID];
-  }
-
-  client.updateUI = function() {
-    // Setting this attribute will trigger a new UI render
-    document.uiState.game = {
-      connected: client.state.connected,
-      status: client.state.status,
-      players: values(client.state.players || {}).map((v) => Object.assign({}, v)),
-      playerID: client.state.playerID,
-    };
   }
 
   // Logic
@@ -205,11 +190,6 @@ function GameClient(path) {
   }
 
   client.handleEvent = function(action) {
-    console.log('Handling Event:', action);
-    if (uiUpdateEvents[action.event]) {
-      console.log('marking UI as stale');
-      client.uiStale = true; 
-    }
     switch (action.event) {
       case 'entity.move': {
         const entity = client.state.entities[action.id];
@@ -237,6 +217,9 @@ function GameClient(path) {
           const player = client.state.players[action.entity.playerID];
           player.entityID = action.entity.id;
           action.entity.player = player;
+          if (action.entity.playerID == client.state.playerID) {
+            client.eventBus.emit('sys.youSpawned', action);
+          }
         }
         break;
       }
@@ -275,6 +258,7 @@ function GameClient(path) {
         break;
       }
     }
+    client.eventBus.emit(action.event, action);
   }
 
 

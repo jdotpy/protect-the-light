@@ -1,4 +1,9 @@
 const EVENTS = {
+  playerConnect: (player) => ({
+    event: 'init.you',
+    player: player.stateDetails(),
+  }),
+
   playerConnectState: (game) => ({
     event: 'init.gameState',
     players: game.getPlayerState(),
