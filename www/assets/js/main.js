@@ -10,6 +10,7 @@ function GameClient(path) {
     entities: {},
   };
   client.eventBus =  EventBus();
+  client.latency = 0;
   document.gameState = client.state; // for debugging purposes, add to document
 
   const uiUpdateEvents = toSet([

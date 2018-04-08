@@ -67,7 +67,20 @@
       </div>
 
       <div id="ui-bar" v-if="gameStatus === 'playing'">
-        <h3>[{{ me.role }}] {{ me.name }}</h3>
+        <div id="abilityBar" class="g-flex-row">
+          <h3>[{{ me.role }}] {{ me.name }}</h3>
+          <div class="abilityButton">
+            <timer
+              :time="1000"
+              :radius="25"
+              :start-time="abilityUses['shoot-bow']"
+               ></timer>
+            A1
+          </div>
+         <div class="abilityButton">A2</div>
+          <div class="abilityButton">A3</div>
+          <div class="abilityButton">A4</div>
+        </div>
         <div id="gauges">
           <gauge
             id="healthBar"

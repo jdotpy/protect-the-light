@@ -19,6 +19,70 @@ Vue.component('gauge', {
   `,
 })
 
+Vue.component('timer', {
+  props: ['radius', 'time', 'startTime'],
+  mounted: function() {
+    this.ctx = this.$el.getContext('2d');
+    this.redraw();
+  },
+  destroyed: function() {
+    this.stop = true;
+  },
+  computed: {
+    diameter: function() {
+      return this.radius * 2;
+    },
+  },
+  watch : {
+    startTime: function() { this.redraw() },
+  },
+  methods: {
+    redraw: function() {
+      if (this.stop) {
+        return false;
+      }
+      this.ctx.clearRect(0, 0, this.diameter, this.diameter);
+      const percentLeft = this.percentLeft();
+      if (percentLeft === 0) {
+        return false;
+      }
+      this.drawMask(this.percentLeft());
+      requestAnimationFrame(this.redraw);
+    },
+    timeLeft: function() {
+      if (!this.startTime) {
+        return 0;
+      }
+      const timeSince = new Date().valueOf() - this.startTime;
+      if (this.time < timeSince) {
+        return 0;
+      }
+      return this.time - timeSince;
+    },
+    percentLeft: function() {
+      const timeLeft = this.timeLeft();
+      if (timeLeft === 0) {
+        return 0;
+      }
+      return ((1.0 * timeLeft) / this.time) * 100;
+    },
+    drawMask: function(percent) {
+      const maxAngle = Math.PI * 2;
+      const angle = (percent / 100) * maxAngle;
+      const startAngle = maxAngle - (Math.PI / 2);
+      this.ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      this.ctx.beginPath();
+      this.ctx.arc(this.radius, this.radius, this.radius, startAngle, startAngle + angle);
+      this.ctx.lineTo(this.radius, this.radius);
+      this.ctx.closePath();
+      this.ctx.fill();
+    },
+  },
+  template: `
+    <canvas class="timer" :width="diameter" :height="diameter" style="position: absolute;"></canvas>
+  `,
+})
+
 const app = new Vue({
   el: '#ui',
   data: {
@@ -29,9 +93,11 @@ const app = new Vue({
     playerID: null,
     players: {},
     playerCharacter: {},
+    abilityUses: {},
   },
   created: function() {
-    document.client.eventBus.registerMany({
+    this.game = document.client;
+    this.game.eventBus.registerMany({
       'sys.connected': () => this.connected = true,
       'sys.disconnected': () => this.connected = false,
       'game.start': (e) => this.gameStatus = e.status,
@@ -53,6 +119,14 @@ const app = new Vue({
         this.playerCharacter = e.entity;
       },
       'entity.damaged': (e) => this.updateCharacterCheck(e, ['health']),
+      'entity.ability': (e) => {
+        if (e.id === this.playerCharacter.id) {
+          this.abilityUses = Object.assign({}, this.abilityUses, {
+            [e.ability]: new Date().valueOf() - this.game.latency,
+          })
+          console.log('updating uses:', this.abilityUses);
+        }
+      },
     });
   },
   computed: {
