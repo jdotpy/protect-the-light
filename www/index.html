@@ -70,12 +70,15 @@
         <div id="abilityBar" class="g-flex-row">
           <h3>[{{ me.role }}] {{ me.name }}</h3>
           <div class="abilityButton">
-            <timer
-              :time="1000"
-              :radius="25"
-              :start-time="abilityUses['shoot-bow']"
-               ></timer>
-            A1
+            <div class="abilityTimerWrapper">
+              <timer
+                :time="1000"
+                :radius="40"
+                :offset="15"
+                :start-time="abilityUses['shoot-bow']"
+              ></timer>
+            </div>
+            <span class="abilityText">A1</span>
           </div>
          <div class="abilityButton">A2</div>
           <div class="abilityButton">A3</div>
