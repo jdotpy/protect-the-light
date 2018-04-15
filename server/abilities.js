@@ -125,19 +125,30 @@ const ShootBow = BaseAbility.extend({
   damage: 2,
 
   __init__: function __init__() {
-    this.Arrow = require('./entities').Arrow;
+    this.arrow = require('./entities').Arrow;
   },
 
   apply: function(map) {
-    const Entities = require('./entities');
+    console.log('Creating arrow')
     const location = this.entity.getVectorFromMe(2);
-    map.spawn(this.Arrow.new({
+    map.spawn(this.arrow.new({
       damage: this.damage,
       aggro: this.damage * this.aggroFactor,
       team: this.entity.team,
       orientation: this.entity.orientation,
       origin: this,
     }), location.x, location.y);
+  },
+});
+
+const PenetratingShot = ShootBow.extend({
+  name: 'penetrating-shot',
+  damage: 4,
+  castTime: 1,
+  cooldown: 10,
+
+  __init__: function __init__() {
+    this.arrow = require('./entities').PenetratingArrow;
   },
 });
 
@@ -176,4 +187,5 @@ module.exports = {
   ShootBow,
   MeleeAttack,
   ToggleCarryTorch,
+  PenetratingShot,
 };

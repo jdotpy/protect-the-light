@@ -115,6 +115,12 @@ const RENDERERS = {
     const image = renderer.getImageAsset('img_object_arrow');
     ctx.drawImage(image, -7.5 * size, -.5 * size, 7.5 * size, size);
   },
+  'penetrating-arrow': (renderer, ctx, entity, location) => {
+    const size = entity.size * renderer.SCALE_FACTOR;
+    const radius = Math.floor(size / 2);
+    const image = renderer.getImageAsset('img_object_red_arrow');
+    ctx.drawImage(image, -7.5 * size, -.5 * size, 7.5 * size, size);
+  },
   'torch': (renderer, ctx, entity, location) => {
     const size = entity.size * renderer.SCALE_FACTOR;
     const radius = Math.floor(size / 2);

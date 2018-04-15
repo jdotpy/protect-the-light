@@ -145,7 +145,7 @@ const app = new Vue({
     updatePlayer: function(e) {
       const current = this.players.find((p) => p.id === e.player.id);
       if (!current) {
-        players.push(e.player);
+        this.players.push(e.player);
       }
       else {
         Object.assign(current, e.player);

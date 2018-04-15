@@ -105,10 +105,7 @@ const Player = {
           return false;
         }
 
-        if (this.character.usingAbility) {
-          this.character.usingAbility.cancel();
-          this.character.usingAbility = null;
-        }
+        this.character.interrupt();
         const completed = ability.use(this.game.map);
         if (!completed) {
           this.character.usingAbility = ability;
@@ -160,6 +157,7 @@ const Player = {
 
     if (this.character) {
       if (this.movement.power) {
+        this.character.interrupt();
         this.character.applyVelocity(
           map,
           this.movement.angle,

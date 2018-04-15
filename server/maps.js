@@ -68,6 +68,7 @@ function BasicMap(players) {
     name: 'basic',
     levelNum: 0,
     radius: 30,
+    center: { x: 0, y: 0 },
     players: players.slice(),
     spawner: Spawner.new({ spawnInterval: 20, spawnCountRange: [1, 2] }),
     playersByName: utils.keyBy(players, 'name'),
@@ -131,7 +132,7 @@ function BasicMap(players) {
     return collision;
   },
 
-  map.moveEntity = function(mover, target) {
+  map.moveEntity = function(mover, target, preventExit = true) {
     const collisions = [];
     let blocked = false;
 
@@ -149,6 +150,17 @@ function BasicMap(players) {
         }
       }
     }
+
+    // Map border control
+    const targetOutsideMap = utils.distanceBetween(target, map.center) > map.radius;
+    const originOutsideMap = utils.distanceBetween(mover, map.center) > map.radius;
+    if (preventExit && targetOutsideMap) {
+      blocked = true;
+    }
+    if (targetOutsideMap && !originOutsideMap) {
+      mover.exit(map);
+    }
+
     // Now if we didn't get blocked by a collision go ahead with relocation
     if (!blocked) {
       mover.x = target.x;

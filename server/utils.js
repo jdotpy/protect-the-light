@@ -77,6 +77,14 @@ function radiansToDegrees(radians) {
   return radians / (Math.PI / 180);
 }
 
+function distanceBetween(from, to) {
+  return Math.sqrt(
+    Math.pow(from.x - to.x, 2)
+    + 
+    Math.pow(from.y - to.y, 2)
+  );
+}
+
 module.exports = {
   preciseTime,
   normalizeAngle,
@@ -84,6 +92,7 @@ module.exports = {
   getRandomInt,
   degreesToRadians,
   radiansToDegrees,
+  distanceBetween,
   getVector,
   angleBetween,
   keyBy,

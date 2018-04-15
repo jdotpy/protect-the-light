@@ -14,6 +14,7 @@ const BaseEntity = {
   y: null, // by the actual entity
   size: 1,
   orientation: 0,
+  preventExit: true,
   collision: true,
   abilityTypes: [],
   carryDistance: 1,
@@ -65,11 +66,7 @@ const BaseEntity = {
   },
 
   distanceTo: function(target) {
-    return Math.sqrt(
-      Math.pow(this.x - target.x, 2)
-      + 
-      Math.pow(this.y - target.y, 2)
-    );
+    return utils.distanceBetween(this, target);
   },
 
   angleTowards: function(target) {
@@ -86,7 +83,7 @@ const BaseEntity = {
 
   applyVelocity: function(map, angle, distance) {
     const target = utils.getVector(this.x, this.y, angle, distance)
-    const collisions = map.moveEntity(this, target);
+    const collisions = map.moveEntity(this, target, this.preventExit);
     return collisions;
   },
 
@@ -131,7 +128,21 @@ const BaseEntity = {
 };
 
 const PlayerEntity = BaseEntity.extend({
-  logic: function(map, loopTime, elapsed) {
+  logic: function logic(map, loopTime, elapsed) {
+    this.super(logic)(map, loopTime, elapsed)
+    // Continue using any started ability
+		if (this.usingAbility) {
+      const complete = this.usingAbility.use(map);
+      if (complete) {
+        this.usingAbility = null;
+      }
+		}
+  },
+  interrupt: function() {
+    if (this.usingAbility) {
+      this.usingAbility.cancel();
+      this.usingAbility = null;
+    }
   },
   updateCarriedObjects: function(map) {
     if (this.carryingTorch) {
@@ -154,7 +165,11 @@ const Archer = PlayerEntity.extend({
   type: 'archer',
   hp: 20,
   speed: 3.1,
-  abilityTypes: [Abilities.ToggleCarryTorch, Abilities.ShootBow],
+  abilityTypes: [
+    Abilities.ToggleCarryTorch,
+    Abilities.ShootBow,
+    Abilities.PenetratingShot,
+  ],
 });
 
 const Knight = PlayerEntity.extend({
@@ -212,6 +227,8 @@ const EnemyAI = BaseEntity.extend({
   },
 
   logic: function(map, loopTime, elapsed) {
+    this.super(logic)(map, loopTime, elapsed)
+
     // If we're using an ability, dont stop it
     if (this.usingAbility) {
       const complete = this.usingAbility.use();
@@ -396,6 +413,7 @@ const Arrow = BaseEntity.extend({
   type: 'arrow',
   speed: 8,
   destroyed: false,
+  preventExit: false,
 
   isDestroyed: function() {
     return this.destroyed;
@@ -421,10 +439,38 @@ const Arrow = BaseEntity.extend({
     }));
   },
 
+  exit: function(map) {
+    this.destroyed = true;
+  },
+
   logic: function(map, loopTime, elapsed) {
     // Else attempt to move into range
     this.applyVelocity(map, this.orientation, this.speed * elapsed);
     map.stateUpdates.add(Events.entityMove(this));
+  },
+})
+
+const PenetratingArrow = Arrow.extend({
+  type: 'penetrating-arrow',
+
+  collide: function(map, collision) {
+    if (this.isDestroyed()) {
+      return false; 
+    }
+    const otherEntity = collision.otherMember(this);
+
+    // Dont do friendly fire
+    if (otherEntity.team === this.origin.entity.team) {
+      return false;
+    }
+
+    // Remove arrow from play
+    this.destroyed = true;
+    otherEntity.takeDamage(this.damage, this.aggro, this.origin);
+    map.stateUpdates.add(Events.entityDamaged(otherEntity, {
+      entity: otherEntity.id,
+      ability: this.name,
+    }));
   },
 })
 
@@ -440,4 +486,5 @@ module.exports = {
   FireTower,
   Torch,
   Arrow,
+  PenetratingArrow,
 }
