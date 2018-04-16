@@ -226,7 +226,7 @@ const EnemyAI = BaseEntity.extend({
     return this.target;
   },
 
-  logic: function(map, loopTime, elapsed) {
+  logic: function logic(map, loopTime, elapsed) {
     this.super(logic)(map, loopTime, elapsed)
 
     // If we're using an ability, dont stop it
@@ -464,8 +464,6 @@ const PenetratingArrow = Arrow.extend({
       return false;
     }
 
-    // Remove arrow from play
-    this.destroyed = true;
     otherEntity.takeDamage(this.damage, this.aggro, this.origin);
     map.stateUpdates.add(Events.entityDamaged(otherEntity, {
       entity: otherEntity.id,
